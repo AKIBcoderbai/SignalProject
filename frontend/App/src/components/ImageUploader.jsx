@@ -1,57 +1,22 @@
 
 
-function ImageUploader({ selectedFile, setSelectedFile, message, setMessage }) {
-  async function uploadImage() {
-    if (!selectedFile) {
-      setMessage("Please select an image first.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      setMessage(
-        `Received ${data.filename} (${data.size} bytes)`
-      );
-    } catch (error) {
-      setMessage("Failed to upload image.");
-      console.error(error);
-    }
-  }
-
+function ImageUploader({ selectedFile, setSelectedFile }) {
   return (
-    <div>
-      <h2>Upload Image</h2>
-
+    <div className="uploader">
+      <div className="label-row"><label htmlFor="image-file">Source image</label><span className="file-type">PNG / JPG</span></div>
       <input
+        id="image-file"
         type="file"
         accept="image/*"
         onChange={(event) => {
-          setSelectedFile(event.target.files[0]);
+          setSelectedFile(event.target.files[0] || null);
         }}
       />
-
-      {selectedFile && (
-        <p>
-          Selected: {selectedFile.name}
-        </p>
-      )}
-
-      <button onClick={uploadImage}>
-        Upload Image
-      </button>
-
-      {message && (
-        <p>{message}</p>
-      )}
+      <label className="drop-zone" htmlFor="image-file">
+        <span className="upload-icon">+</span>
+        <strong>{selectedFile ? selectedFile.name : 'Choose an image'}</strong>
+        <small>{selectedFile ? `${Math.round(selectedFile.size / 1024)} KB selected` : 'Click to browse your files'}</small>
+      </label>
     </div>
   );
 }
