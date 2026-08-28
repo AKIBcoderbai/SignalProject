@@ -1,16 +1,24 @@
 
 
 function ImageUploader({ selectedFile, setSelectedFile }) {
+  function handleChange(event) {
+    const file = event.target.files[0] || null
+    if (file && !['image/png', 'image/jpeg'].includes(file.type)) {
+      event.target.value = ''
+      setSelectedFile(null)
+      return
+    }
+    setSelectedFile(file)
+  }
+
   return (
     <div className="uploader">
       <div className="label-row"><label htmlFor="image-file">Source image</label><span className="file-type">PNG / JPG</span></div>
       <input
         id="image-file"
         type="file"
-        accept="image/*"
-        onChange={(event) => {
-          setSelectedFile(event.target.files[0] || null);
-        }}
+        accept="image/png,image/jpeg"
+        onChange={handleChange}
       />
       <label className="drop-zone" htmlFor="image-file">
         <span className="upload-icon">+</span>
