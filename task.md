@@ -1,10 +1,11 @@
-# Implementation Checklist
+# Feature Dashboard Checklist
 
-- [x] Approve implementation plan
-- [x] Implement Fourier transform and image loading core
-- [x] Add processing API and dependency manifest
-- [x] Add backend tests
-- [x] Connect frontend to API and add result states
-- [x] Verify backend tests (9 passed)
+- [x] Approve dashboard plan
+- [x] Add router and feature catalog
+- [x] Build home dashboard and shared navigation
+- [x] Move filter workflow to routed page
+- [x] Add spectrum viewer and fallback page
 - [x] Verify frontend lint and build
-- [x] Record architecture
+- [x] Verify backend tests (10 passed)
+- [x] Update architecture notes
+- [x] Commit completed work on current branch

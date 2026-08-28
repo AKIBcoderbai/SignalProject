@@ -38,7 +38,7 @@ class FourierTransform:
             raise ValueError("spectrum shape must match the source image")
         columns = np.apply_along_axis(self._idft_1d, 0, spectrum.astype(complex))
         reconstructed = np.apply_along_axis(self._idft_1d, 1, columns)
-        return np.real_if_close(reconstructed, tol=1000).real
+        return np.real_if_close(reconstructed, tol=1000).real # type: ignore
 
     def create_filter_mask(self, filter_name, cutoff, order=2, high_pass=False):
         try:
