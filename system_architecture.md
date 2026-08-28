@@ -13,6 +13,15 @@
 
 During local development, Vite proxies `/api` to Flask at `127.0.0.1:5000`.
 
+## Frontend Routes and Feature Catalog
+
+- `/` renders roadmap dashboard from `src/data/features.js`.
+- `/features/image-filtering` renders low-pass filter workspace.
+- `/features/spectrum-viewer` renders spectrum-focused workspace.
+- Unknown routes render local 404 page.
+
+Feature status and navigation belong in `features.js`. Planned features have no path and render as disabled cards. When feature becomes usable, add its page/route, set status to `completed`, and add path there.
+
 ## Processing Constraint
 
 Manual DFT has high computational cost. Uploaded images are resized to fit within 128 × 128 while preserving aspect ratio. Keep this constraint until transform computation moves to FFT or an asynchronous job system.

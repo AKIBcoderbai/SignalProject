@@ -1,7 +1,7 @@
 import io
 
 import numpy as np
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 
 class ImageLoader:
@@ -14,7 +14,7 @@ class ImageLoader:
             with Image.open(io.BytesIO(image_bytes)) as source:
                 source.verify()
             with Image.open(io.BytesIO(image_bytes)) as source:
-                image = source.convert("RGB")
+                image = ImageOps.exif_transpose(source).convert("RGB")
                 image.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
                 pixels = np.asarray(image, dtype=float)
         except (UnidentifiedImageError, OSError) as exc:

@@ -14,6 +14,15 @@ def image_bytes():
     return buffer.getvalue()
 
 
+def rotated_jpeg_bytes():
+    buffer = io.BytesIO()
+    image = Image.new("RGB", (12, 6), (100, 150, 200))
+    exif = Image.Exif()
+    exif[274] = 6
+    image.save(buffer, "JPEG", exif=exif)
+    return buffer.getvalue()
+
+
 def test_health():
     client = create_app().test_client()
     assert client.get("/api/health").get_json() == {"status": "ok"}
@@ -34,5 +43,13 @@ def test_process_rejects_invalid_upload_and_settings():
     assert client.post("/api/process", data={}).status_code == 400
     response = client.post("/api/process", data={"image": (io.BytesIO(b"bad"), "bad.png")})
     assert response.status_code == 400
+
+
+def test_process_applies_exif_orientation_before_transform():
+    client = create_app().test_client()
+    response = client.post("/api/process", data={"image": (io.BytesIO(rotated_jpeg_bytes()), "rotated.jpg")})
+    metadata = response.get_json()["metadata"]
+    assert response.status_code == 200
+    assert (metadata["width"], metadata["height"]) == (6, 12)
     response = client.post("/api/process", data={"image": (io.BytesIO(image_bytes()), "sample.png"), "cutoff": "0"})
     assert response.status_code == 400

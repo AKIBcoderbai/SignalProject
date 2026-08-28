@@ -1,66 +1,67 @@
-# Fourier Transform Application — First Feature Slice
+# Feature Dashboard and Routed Pages
 
-## Scope
+## Goal
 
-Deliver usable end-to-end image processing: upload one PNG/JPEG, apply a low-pass Fourier filter, view processed image and frequency spectrum, and handle validation/loading/errors in both API and UI.
+Make `/` a project home page listing Fourier-transform applications and completion status. Completed feature cards navigate to working feature pages; planned cards remain visible but disabled.
+
+## Initial Feature Catalog
+
+1. **Image Low-Pass Filtering** — Completed — `/features/image-filtering`
+   - Existing Ideal, Gaussian, and Butterworth blur workflow.
+2. **Frequency Spectrum Viewer** — Completed — `/features/spectrum-viewer`
+   - Existing upload and magnitude-spectrum workflow, presented as a focused page.
+3. **High-Pass Sharpening** — Planned
+4. **Edge Detection** — Planned
+5. **Frequency-Domain Compression** — Planned
+6. **Audio Noise Filtering** — Planned
+
+Catalog lives in one data module so later implementation only changes status/path and adds page component.
 
 ## Files
 
-- `[MODIFY] backend/fourier/fourier_transform.py`
-  - Validate non-empty 2D input.
-  - Implement mathematical 1D/2D DFT and inverse DFT without `np.fft` for transform computation.
-  - Implement centered Ideal, Gaussian, and Butterworth low/high-pass masks.
-  - Implement filtering, high-boost sharpening, spectrum rendering, normalization, and parameter validation.
-- `[MODIFY] backend/image/image_loader.py`
-  - Remove stray/debug code.
-  - Validate uploaded bytes and decode images safely.
-  - Convert RGB/RGBA inputs to grayscale using vectorized luminance weights.
-- `[NEW] backend/app.py`
-  - Add Flask API with health and image-processing endpoints.
-  - Accept multipart upload plus filter settings.
-  - Limit upload size, reject bad files/settings, resize oversized images for manual DFT practicality.
-  - Return processed image and spectrum as PNG data URLs with metadata.
-- `[NEW] backend/requirements.txt`
-  - Declare Flask, Flask-CORS, NumPy, Pillow.
-- `[NEW] backend/tests/test_fourier_transform.py`
-  - Verify forward/inverse reconstruction, masks, filtering output, spectrum, and invalid inputs.
-- `[NEW] backend/tests/test_api.py`
-  - Verify health, successful multipart processing, bad settings, and invalid uploads.
-- `[NEW] frontend/App/src/api.js`
-  - Centralize backend request, response parsing, and useful error messages.
+- `[MODIFY] frontend/App/package.json`
+  - Add `react-router-dom` for URL-backed navigation and direct page loading.
+- `[MODIFY] frontend/App/package-lock.json`
+  - Record router dependency.
+- `[MODIFY] frontend/App/src/main.jsx`
+  - Wrap app with `BrowserRouter`.
 - `[MODIFY] frontend/App/src/App.jsx`
-  - Connect Apply button to API.
-  - Add processing state, error recovery, original/processed/spectrum result selection, and returned metadata.
-- `[MODIFY] frontend/App/src/components/ImageUploader.jsx`
-  - Enforce PNG/JPEG selection, reset results when source changes, expose accessible validation cues.
+  - Replace single-page body with route definitions and shared application shell.
+- `[NEW] frontend/App/src/data/features.js`
+  - Define feature title, description, status, number, category, and route.
+- `[NEW] frontend/App/src/components/AppHeader.jsx`
+  - Shared header with clickable home branding and current section context.
+- `[NEW] frontend/App/src/components/FeatureCard.jsx`
+  - Accessible completed/planned card behavior; only completed cards become links.
+- `[NEW] frontend/App/src/pages/HomePage.jsx`
+  - Hero, progress summary, completed/planned counters, and feature grid.
+- `[NEW] frontend/App/src/pages/ImageFilteringPage.jsx`
+  - Move existing filtering workflow into routed page with home breadcrumb.
+- `[NEW] frontend/App/src/pages/SpectrumViewerPage.jsx`
+  - Focused spectrum page using same processing API and upload experience.
+- `[NEW] frontend/App/src/pages/NotFoundPage.jsx`
+  - Friendly fallback with home navigation.
 - `[MODIFY] frontend/App/src/App.css`
-  - Style loading/disabled/error states and result tabs while retaining current design.
-- `[MODIFY] frontend/App/src/index.css`
-  - Remove leftover Vite starter styles conflicting with app layout/theme.
-- `[MODIFY] frontend/App/vite.config.js`
-  - Proxy `/api` to local Flask server during development.
-- `[NEW] system_architecture.md`
-  - Record API contract, processing constraints, and frontend/backend boundaries after implementation.
-- `[NEW] task.md`
-  - Track execution and verification checklist after plan approval.
+  - Add dashboard, cards, progress, navigation, and responsive page styling.
+- `[MODIFY] task.md`
+  - Replace completed checklist with dashboard execution checklist.
+- `[MODIFY] system_architecture.md`
+  - Record route map and feature-catalog convention.
 
-## API Contract
+## Behavior
 
-`POST /api/process` using multipart form data:
-
-- `image`: PNG or JPEG file
-- `filter`: `gaussian`, `ideal`, or `butterworth`
-- `cutoff`: positive number
-- `order`: positive integer (Butterworth; default 2)
-
-Success JSON contains `processedImage`, `spectrumImage`, and `metadata`. Errors use `{ "error": "..." }` with suitable 4xx/5xx status.
+- Home route shows all six features with `Completed` or `Planned` badge.
+- Completed cards support mouse and keyboard navigation.
+- Planned cards explain they are unavailable and cannot navigate.
+- Header logo/title returns home from every page.
+- Browser back/forward and direct URLs work.
+- Existing filter feature keeps API behavior and EXIF orientation fix.
+- Spectrum viewer uploads/processes independently and opens spectrum result automatically.
 
 ## Verification
 
-1. Run backend unit/API tests.
-2. Run frontend lint and production build.
-3. Smoke-test API health and one generated in-memory image request.
-
-## Constraint
-
-Direct mathematical DFT is intentionally slow for large images. First version resizes input to a conservative maximum dimension before processing and reports resulting dimensions in metadata.
+1. Install router dependency.
+2. Run frontend lint.
+3. Run production build.
+4. Run backend test suite to protect existing processing.
+5. Do not commit yet; user requested commit only after all project work is over.
