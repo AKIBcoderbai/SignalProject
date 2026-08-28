@@ -2,189 +2,90 @@ import numpy as np
 
 
 class FourierTransform:
+    """Educational 2D DFT implementation and frequency-domain filters."""
 
     def __init__(self, image: np.ndarray):
-        """
-        Initialize the Fourier Transform.
-
-        Parameters:
-            image: 2D grayscale image matrix.
-
-        TODO:
-        - Store the image.
-        - Store the image height.
-        - Store the image width.
-        - Validate that the input is actually 2D.
-
-        Think about:
-            What should happen if someone accidentally
-            passes an RGB image with shape (H, W, 3)?
-        """
-        # TODO: Implement this initialization.
-        # Instruction: validate that image is a non-empty 2D array, then
-        # store image, height, and width on self.
-        raise NotImplementedError("Implement FourierTransform initialization")
+        image = np.asarray(image)
+        if image.ndim != 2 or image.size == 0:
+            raise ValueError("image must be a non-empty 2D array")
+        if not np.issubdtype(image.dtype, np.number):
+            raise ValueError("image must contain numeric values")
+        self.image = image.astype(float)
+        self.height, self.width = self.image.shape
 
     def _dft_1d(self, signal: np.ndarray) -> np.ndarray:
-        """
-        Calculate the 1D Discrete Fourier Transform.
+        signal = np.asarray(signal)
+        if signal.ndim != 1 or signal.size == 0:
+            raise ValueError("signal must be a non-empty 1D array")
+        length = signal.size
+        indices = np.arange(length)
+        kernel = np.exp(-2j * np.pi * np.outer(indices, indices) / length)
+        return kernel @ signal.astype(complex)
 
-        TODO:
-
-        Implement the 1D DFT:
-
-            X[k] = sum(n=0 to N-1)
-                x[n] * exp(-j * 2πkn/N)
-
-        Parameters:
-            signal:
-                One-dimensional input signal.
-
-        Returns:
-            Complex-valued 1D spectrum.
-        """
-        # TODO: Implement the mathematical 1D DFT shown above.
-        # Instruction: validate a one-dimensional input, create a complex
-        # output, and calculate every X[k] using the nested k/n summation.
-        raise NotImplementedError("Implement the 1D DFT")
-
-        
+    def _idft_1d(self, spectrum: np.ndarray) -> np.ndarray:
+        length = spectrum.size
+        indices = np.arange(length)
+        kernel = np.exp(2j * np.pi * np.outer(indices, indices) / length)
+        return (kernel @ spectrum) / length
 
     def forward(self) -> np.ndarray:
-        """
-        Calculate the 2D Discrete Fourier Transform.
-
-        TODO:
-
-        Implement the 2D DFT from its mathematical definition.
-
-        DO NOT use:
-            np.fft
-            scipy.fft
-            scipy.fftpack
-
-        The result should be a 2D complex-valued array.
-
-        Think about:
-
-            Input:
-                f(x, y)
-
-            Output:
-                F(u, v)
-
-        Questions you need to answer:
-
-        1. What are u and v?
-
-        2. What are x and y?
-
-        3. What are the dimensions of the output?
-
-        4. What complex exponential is used?
-
-        5. What normalization, if any, is required
-           for the forward transform?
-
-        6. How do you handle the complex numbers?
-
-        Return:
-            2D array containing the Fourier coefficients.
-        """
-        # TODO: Implement the 2D DFT without np.fft/scipy.fft.
-        # Instruction: apply _dft_1d to every row, then every column; return
-        # a complex array with the same height and width as self.image.
-        raise NotImplementedError("Implement the 2D forward transform")
-
+        rows = np.apply_along_axis(self._dft_1d, 1, self.image)
+        return np.apply_along_axis(self._dft_1d, 0, rows)
 
     def inverse(self, spectrum: np.ndarray) -> np.ndarray:
-        """
-        Calculate the inverse 2D Discrete Fourier Transform.
-
-        Parameters:
-            spectrum:
-                2D array containing Fourier coefficients.
-
-        TODO:
-
-        Implement the inverse DFT from its mathematical
-        definition.
-
-        DO NOT use:
-            np.fft
-            scipy.fft
-            scipy.fftpack
-
-        Think about:
-
-            F(u, v)
-                ↓
-            f(x, y)
-
-        Questions you need to answer:
-
-        1. What changes between the forward and inverse
-           transform?
-
-        2. Where does the normalization factor go?
-
-        3. What happens to the imaginary component when
-           reconstructing the image?
-
-        4. What should the reconstructed image's shape be?
-
-        Return:
-            Reconstructed 2D image.
-        """
-        # TODO: Implement the inverse 2D DFT from the mathematical definition.
-        # Instruction: use the positive imaginary exponent, normalize each
-        # dimension correctly, discard numerical imaginary noise, and return
-        # a real image with the original spatial dimensions.
-        raise NotImplementedError("Implement the inverse 2D transform")
+        spectrum = np.asarray(spectrum)
+        if spectrum.ndim != 2 or spectrum.shape != (self.height, self.width):
+            raise ValueError("spectrum shape must match the source image")
+        columns = np.apply_along_axis(self._idft_1d, 0, spectrum.astype(complex))
+        reconstructed = np.apply_along_axis(self._idft_1d, 1, columns)
+        return np.real_if_close(reconstructed, tol=1000).real
 
     def create_filter_mask(self, filter_name, cutoff, order=2, high_pass=False):
-        """Create a frequency-domain mask for one selected filter."""
-        # TODO: Implement ideal, Gaussian, and Butterworth masks.
-        # Instruction: calculate distance from the centered frequency origin;
-        # validate cutoff > 0; invert the low-pass mask for high-pass output.
-        raise NotImplementedError("Implement frequency filter masks")
+        try:
+            cutoff = float(cutoff)
+            order = int(order)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("cutoff and order must be numeric") from exc
+        if cutoff <= 0:
+            raise ValueError("cutoff must be greater than zero")
+        if order <= 0:
+            raise ValueError("order must be a positive integer")
+        name = str(filter_name).strip().lower()
+        y = np.arange(self.height) - self.height // 2
+        x = np.arange(self.width) - self.width // 2
+        distance = np.sqrt(y[:, None] ** 2 + x[None, :] ** 2)
+        if name == "ideal":
+            mask = (distance <= cutoff).astype(float)
+        elif name == "gaussian":
+            mask = np.exp(-(distance ** 2) / (2 * cutoff ** 2))
+        elif name == "butterworth":
+            mask = 1 / (1 + (distance / cutoff) ** (2 * order))
+        else:
+            raise ValueError("filter must be ideal, gaussian, or butterworth")
+        return 1 - mask if high_pass else mask
+
+    @staticmethod
+    def _to_uint8(image: np.ndarray) -> np.ndarray:
+        return np.clip(np.rint(image), 0, 255).astype(np.uint8)
 
     def apply_filter(self, filter_name, cutoff, order=2, high_pass=False):
-        """Return the image reconstructed after applying a frequency mask."""
-        # TODO: Implement the filtering pipeline.
-        # Instruction: forward-transform the image, fftshift it, multiply by
-        # the mask, unshift it, inverse-transform it, and normalize output.
-        raise NotImplementedError("Implement frequency-domain filtering")
+        centered = np.fft.fftshift(self.forward())
+        filtered = centered * self.create_filter_mask(filter_name, cutoff, order, high_pass)
+        return self._to_uint8(self.inverse(np.fft.ifftshift(filtered)))
 
     def high_boost(self, cutoff, boost_factor=1.5, order=2):
-        """Return a high-boost sharpened image."""
-        # TODO: Implement high-boost sharpening.
-        # Instruction: create a high-pass result, combine it with the original
-        # image using boost_factor, then clip/normalize to a displayable image.
-        raise NotImplementedError("Implement high-boost sharpening")
+        if float(boost_factor) <= 0:
+            raise ValueError("boost factor must be greater than zero")
+        high_frequency = self.apply_filter("butterworth", cutoff, order, True).astype(float)
+        return self._to_uint8(self.image + float(boost_factor) * high_frequency)
 
     def spectrum_image(self):
-        """Return a displayable magnitude spectrum for the frontend."""
-        # TODO: Implement spectrum visualization.
-        # Instruction: use log(1 + abs(fftshift(spectrum))) and normalize it
-        # to an 8-bit image before returning it.
-        raise NotImplementedError("Implement spectrum visualization")
-        
+        magnitude = np.log1p(np.abs(np.fft.fftshift(self.forward())))
+        peak = magnitude.max()
+        return np.zeros_like(self.image, dtype=np.uint8) if peak == 0 else np.rint(magnitude * 255 / peak).astype(np.uint8)
 
 
-
-
-def main():
-    test_image = np.array([
-        [1, 2],
-        [3, 4]
-    ], dtype=float)
-
-    # TODO: Add your own small verification after implementing the methods.
-    # Instruction: test forward -> inverse and check reconstruction error.
-    fourier = FourierTransform(test_image)
-    spectrum = fourier.forward()
-    print(spectrum)
-
-if __name__=="__main__":
-     main()
+if __name__ == "__main__":
+    sample = np.array([[1, 2], [3, 4]], dtype=float)
+    transform = FourierTransform(sample)
+    print(f"maximum reconstruction error: {np.max(np.abs(sample - transform.inverse(transform.forward()))):.3e}")
