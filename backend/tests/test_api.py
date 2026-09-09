@@ -1,6 +1,7 @@
 import io
 import os
 import sys
+import base64
 
 from PIL import Image
 
@@ -36,6 +37,15 @@ def test_process_image():
     assert payload["processedImage"].startswith("data:image/png;base64,")
     assert payload["spectrumImage"].startswith("data:image/png;base64,")
     assert payload["metadata"]["width"] == 8
+
+
+def test_process_image_preserves_color_channels():
+    client = create_app().test_client()
+    response = client.post("/api/process", data={"image": (io.BytesIO(image_bytes()), "sample.png"), "filter": "gaussian", "cutoff": "3"})
+    encoded = response.get_json()["processedImage"].split(",", 1)[1]
+    processed = Image.open(io.BytesIO(base64.b64decode(encoded)))
+    assert processed.mode == "RGB"
+    assert processed.getpixel((0, 0)) == (100, 150, 200)
 
 
 def test_process_rejects_invalid_upload_and_settings():
