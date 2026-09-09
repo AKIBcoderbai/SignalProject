@@ -30,9 +30,18 @@ def create_app():
             filter_name = request.form.get("filter", "gaussian").lower()
             cutoff = float(request.form.get("cutoff", 35))
             order = int(request.form.get("order", 2))
+            mode = request.form.get("mode", "blur").lower()
+            boost = float(request.form.get("boost", 1.5))
             matrix = ImageLoader().load_from_bytes(upload.read())
             transform = FourierTransform(matrix)
-            processed = transform.apply_filter(filter_name, cutoff, order)
+            brush = None
+            if request.form.get("brush_x") is not None:
+                brush = (
+                    float(request.form.get("brush_x")),
+                    float(request.form.get("brush_y")),
+                    float(request.form.get("brush_radius", 0.08)),
+                )
+            processed = transform.high_boost(cutoff, boost, order, brush) if mode == "sharpen" else transform.apply_filter(filter_name, cutoff, order, brush=brush)
             spectrum = transform.spectrum_image()
         except ValueError as exc:
             return jsonify(error=str(exc)), 400
@@ -46,7 +55,7 @@ def create_app():
         return jsonify(
             processedImage=png_data_url(processed),
             spectrumImage=png_data_url(spectrum),
-            metadata={"filter": filter_name, "cutoff": cutoff, "order": order, "width": transform.width, "height": transform.height},
+            metadata={"filter": filter_name, "cutoff": cutoff, "order": order, "mode": mode, "boost": boost, "width": transform.width, "height": transform.height},
         )
 
     @app.errorhandler(413)

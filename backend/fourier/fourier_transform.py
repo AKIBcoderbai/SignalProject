@@ -40,7 +40,7 @@ class FourierTransform:
         reconstructed = np.apply_along_axis(self._idft_1d, 1, columns)
         return np.real_if_close(reconstructed, tol=1000).real # type: ignore
 
-    def create_filter_mask(self, filter_name, cutoff, order=2, high_pass=False):
+    def create_filter_mask(self, filter_name, cutoff, order=2, high_pass=False, brush=None):
         try:
             cutoff = float(cutoff)
             order = int(order)
@@ -62,21 +62,28 @@ class FourierTransform:
             mask = 1 / (1 + (distance / cutoff) ** (2 * order))
         else:
             raise ValueError("filter must be ideal, gaussian, or butterworth")
+        if brush is not None:
+            brush_x, brush_y, brush_radius = (float(value) for value in brush)
+            if not 0 <= brush_x <= 1 or not 0 <= brush_y <= 1 or brush_radius <= 0:
+                raise ValueError("brush coordinates must be normalized and radius must be greater than zero")
+            brush_distance = np.sqrt((x[None, :] - (brush_x * (self.width - 1) - self.width / 2)) ** 2 + (y[:, None] - (brush_y * (self.height - 1) - self.height / 2)) ** 2)
+            brush_mask = (brush_distance <= brush_radius * max(self.width, self.height)).astype(float)
+            mask = mask * (1 - brush_mask) if high_pass else np.maximum(mask, brush_mask)
         return 1 - mask if high_pass else mask
 
     @staticmethod
     def _to_uint8(image: np.ndarray) -> np.ndarray:
         return np.clip(np.rint(image), 0, 255).astype(np.uint8)
 
-    def apply_filter(self, filter_name, cutoff, order=2, high_pass=False):
+    def apply_filter(self, filter_name, cutoff, order=2, high_pass=False, brush=None):
         centered = np.fft.fftshift(self.forward())
-        filtered = centered * self.create_filter_mask(filter_name, cutoff, order, high_pass)
+        filtered = centered * self.create_filter_mask(filter_name, cutoff, order, high_pass, brush)
         return self._to_uint8(self.inverse(np.fft.ifftshift(filtered)))
 
-    def high_boost(self, cutoff, boost_factor=1.5, order=2):
+    def high_boost(self, cutoff, boost_factor=1.5, order=2, brush=None):
         if float(boost_factor) <= 0:
             raise ValueError("boost factor must be greater than zero")
-        high_frequency = self.apply_filter("butterworth", cutoff, order, True).astype(float)
+        high_frequency = self.apply_filter("butterworth", cutoff, order, True, brush).astype(float)
         return self._to_uint8(self.image + float(boost_factor) * high_frequency)
 
     def spectrum_image(self):
