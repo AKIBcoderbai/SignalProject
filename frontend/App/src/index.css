@@ -1,15 +1,21 @@
 :root {
-  --heading: Georgia, 'Times New Roman', serif;
-  --mono: 'Courier New', Consolas, monospace;
-  font-family: 'Trebuchet MS', Arial, sans-serif;
-  color: #1e2725;
-  background: #f3f0e9;
+  --heading: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', Consolas, monospace;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #f8fafc;
+  background-color: #0b0f19;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
+body {
+  margin: 0;
+  min-width: 320px;
+  background-color: #0b0f19;
+  color: #f8fafc;
+}
 button, input, select { font: inherit; }
 p { margin: 0; }
+

@@ -63,3 +63,18 @@ def test_process_applies_exif_orientation_before_transform():
     assert (metadata["width"], metadata["height"]) == (6, 12)
     response = client.post("/api/process", data={"image": (io.BytesIO(image_bytes()), "sample.png"), "cutoff": "0"})
     assert response.status_code == 400
+
+
+def test_decompose_shape_endpoint():
+    client = create_app().test_client()
+    payload = {"points": [[0, 0], [10, 0], [10, 10], [0, 10]], "harmonics": 2}
+    response = client.post("/api/decompose_shape", json=payload)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["totalPoints"] == 4
+    assert data["harmonicsCount"] == 2
+    assert len(data["reconstructedPoints"]) == 4
+
+    # Invalid input handling
+    assert client.post("/api/decompose_shape", json={}).status_code == 400
+

@@ -1,3 +1,16 @@
+# ==============================================================================
+# HOW TO RUN THE BACKEND FLASK SERVER:
+#
+# Windows (PowerShell):
+#   .\venv\Scripts\python.exe app.py
+#
+# Windows (CMD):
+#   venv\Scripts\python.exe app.py
+#
+# Linux / macOS:
+#   python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python app.py
+# ==============================================================================
+
 import base64
 import io
 import os
@@ -38,8 +51,8 @@ def create_app():
             brush = None
             if request.form.get("brush_x") is not None:
                 brush = (
-                    float(request.form.get("brush_x")),
-                    float(request.form.get("brush_y")),
+                    float(request.form.get("brush_x")), # type: ignore
+                    float(request.form.get("brush_y")), # type: ignore
                     float(request.form.get("brush_radius", 0.08)),
                 )
             processed_channels = []
@@ -68,6 +81,19 @@ def create_app():
             metadata={"filter": filter_name, "cutoff": cutoff, "order": order, "mode": mode, "boost": boost, "width": transforms[0].width, "height": transforms[0].height, "channels": 3},
         )
 
+    @app.post("/api/decompose_shape")
+    def decompose_shape():
+        data = request.get_json(silent=True) or {}
+        points = data.get("points")
+        harmonics = data.get("harmonics")
+        if not points or not isinstance(points, list):
+            return jsonify(error="Please provide an array of [x, y] points."), 400
+        try:
+            result = FourierTransform.decompose_shape_contour(points, harmonics)
+            return jsonify(result)
+        except ValueError as exc:
+            return jsonify(error=str(exc)), 400
+
     @app.errorhandler(413)
     def too_large(_error):
         return jsonify(error="Image must be smaller than 10 MB."), 413
@@ -79,3 +105,4 @@ app = create_app()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+

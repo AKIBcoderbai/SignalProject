@@ -36,3 +36,28 @@ def test_invalid_inputs_fail_cleanly():
         FourierTransform(np.ones((2, 2))).create_filter_mask("unknown", 2)
     with pytest.raises(ValueError):
         FourierTransform(np.ones((2, 2))).create_filter_mask("ideal", 0)
+
+
+def test_radix2_and_bluestein_fft_accuracy():
+    from fourier.fast_fourier import Radix2FFT, BluesteinFFT
+    # Power of two test (N = 8)
+    signal_pow2 = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=complex)
+    expected_pow2 = np.fft.fft(signal_pow2)
+    np.testing.assert_allclose(Radix2FFT.fft_1d(signal_pow2), expected_pow2, atol=1e-10)
+    np.testing.assert_allclose(Radix2FFT.ifft_1d(expected_pow2), signal_pow2, atol=1e-10)
+
+    # Arbitrary length prime test (N = 7)
+    signal_prime = np.array([3, 1, 4, 1, 5, 9, 2], dtype=complex)
+    expected_prime = np.fft.fft(signal_prime)
+    np.testing.assert_allclose(BluesteinFFT.fft_1d(signal_prime), expected_prime, atol=1e-10)
+    np.testing.assert_allclose(BluesteinFFT.ifft_1d(expected_prime), signal_prime, atol=1e-10)
+
+
+def test_decompose_shape_contour():
+    points = [[0, 0], [10, 0], [10, 10], [0, 10]]
+    result = FourierTransform.decompose_shape_contour(points, num_harmonics=2)
+    assert result["totalPoints"] == 4
+    assert result["harmonicsCount"] == 2
+    assert len(result["reconstructedPoints"]) == 4
+    assert len(result["harmonics"]) == 4
+
