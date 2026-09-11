@@ -154,9 +154,13 @@ export default function ShapeDrawerPage() {
               re += points[n][0] * Math.cos(phi) + points[n][1] * Math.sin(phi)
               im += -points[n][0] * Math.sin(phi) + points[n][1] * Math.cos(phi)
             }
-            coeffs.push({ re: re / N, im: im / N, magnitude: Math.hypot(re, im) / N, phase: Math.atan2(im, re), freq: k <= N / 2 ? k : k - N })
+            const freq = k <= N / 2 ? k : k - N
+            coeffs.push({ k: freq, re: re / N, im: im / N, magnitude: Math.hypot(re, im) / N, phase: Math.atan2(im, re), freq })
           }
-          coeffs.sort((a, b) => b.magnitude - a.magnitude)
+          // Match the DFT summation order: DC, then +1/-1, +2/-2, ... .
+          // K therefore progressively adds higher-frequency bins instead of
+          // selecting whichever coefficients happen to have the most energy.
+          coeffs.sort((a, b) => Math.abs(a.k) - Math.abs(b.k) || Number(a.k < 0) - Number(b.k < 0))
           const kMax = Math.min(harmonics, N)
           setDecomposition({ totalPoints: N, harmonicsCount: kMax, harmonics: coeffs.slice(0, kMax) })
         }
@@ -173,7 +177,13 @@ export default function ShapeDrawerPage() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
 
-    const sortedHarmonics = [...decomposition.harmonics].sort((a, b) => b.magnitude - a.magnitude)
+    // The API returns bins in frequency order. Keep that order for the
+    // vector sum so each newly selected K adds the next frequency pair.
+    const sortedHarmonics = decomposition.harmonics
+      .filter((harmonic) => harmonic.active !== false)
+      .sort((a, b) => (
+      Math.abs(a.freq) - Math.abs(b.freq) || Number(a.freq < 0) - Number(b.freq < 0)
+      ))
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -187,10 +197,11 @@ export default function ShapeDrawerPage() {
       let y = canvas.height / 2
 
       // Draw DC / center shift
-      if (sortedHarmonics[0] && sortedHarmonics[0].freq === 0) {
+      const dc = sortedHarmonics.find((harmonic) => harmonic.freq === 0)
+      if (dc) {
         // DC offset is mean position
-        x = sortedHarmonics[0].re
-        y = sortedHarmonics[0].im
+        x = dc.re
+        y = dc.im
       }
 
       ctx.save()

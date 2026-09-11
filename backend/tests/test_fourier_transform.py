@@ -61,3 +61,11 @@ def test_decompose_shape_contour():
     assert len(result["reconstructedPoints"]) == 4
     assert len(result["harmonics"]) == 4
 
+
+def test_decompose_shape_uses_progressive_signed_frequency_order():
+    points = [[np.cos(t), np.sin(t)] for t in np.linspace(0, 2 * np.pi, 8, endpoint=False)]
+    result = FourierTransform.decompose_shape_contour(points, num_harmonics=3)
+
+    assert [harmonic["k"] for harmonic in result["harmonics"]] == [0, 1, -1, 2, -2, 3, -3, -4]
+    assert [harmonic["active"] for harmonic in result["harmonics"]] == [True, True, True, False, False, False, False, False]
+

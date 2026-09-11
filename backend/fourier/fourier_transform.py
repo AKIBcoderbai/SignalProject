@@ -46,10 +46,17 @@ class FourierTransform:
         N = pts.shape[0]
         complex_signal = pts[:, 0] + 1j * pts[:, 1]
         fft_coeffs = BluesteinFFT.fft_1d(complex_signal) / N
-        freqs = np.fft.fftfreq(N)
+        frequency_indices = np.rint(np.fft.fftfreq(N) * N).astype(int)
 
+        # DFT reconstruction is z[n] = sum(C_k * exp(i * 2*pi*k*n/N)).
+        # Add bins by increasing frequency magnitude, pairing +k and -k,
+        # rather than by coefficient magnitude. This makes K a progressive
+        # frequency cutoff: 0, +1, -1, +2, -2, ...
         indices = np.arange(N)
-        sorted_indices = sorted(indices, key=lambda i: np.abs(fft_coeffs[i]), reverse=True)
+        sorted_indices = sorted(
+            indices,
+            key=lambda i: (abs(frequency_indices[i]), frequency_indices[i] < 0),
+        )
 
         max_k = N if num_harmonics is None else max(1, min(int(num_harmonics), N))
         selected_indices = set(sorted_indices[:max_k])
@@ -66,8 +73,9 @@ class FourierTransform:
             coeff = fft_coeffs[idx]
             mag = float(np.abs(coeff))
             phase = float(np.angle(coeff))
-            freq = int(round(freqs[idx] * N))
+            freq = int(frequency_indices[idx])
             harmonics.append({
+                "k": freq,
                 "freq": freq,
                 "magnitude": mag,
                 "phase": phase,
