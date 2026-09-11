@@ -5,9 +5,9 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 
 class ImageLoader:
-    """Decode uploads into grayscale matrices for 2D DFT processing."""
+    """Decode uploads into image matrices for 2D DFT processing."""
 
-    def load_from_bytes(self, image_bytes: bytes, max_dimension: int = 128) -> np.ndarray:
+    def _load_rgb(self, image_bytes: bytes, max_dimension: int = 128) -> np.ndarray:
         if not image_bytes:
             raise ValueError("uploaded image is empty")
         try:
@@ -19,7 +19,13 @@ class ImageLoader:
                 pixels = np.asarray(image, dtype=float)
         except (UnidentifiedImageError, OSError) as exc:
             raise ValueError("uploaded file is not a valid image") from exc
-        return self.image_grayscale_converter(pixels)
+        return pixels[..., :3]
+
+    def load_from_bytes(self, image_bytes: bytes, max_dimension: int = 128) -> np.ndarray:
+        return self.image_grayscale_converter(self._load_rgb(image_bytes, max_dimension))
+
+    def load_rgb_from_bytes(self, image_bytes: bytes, max_dimension: int = 128) -> np.ndarray:
+        return self._load_rgb(image_bytes, max_dimension)
 
     def image_grayscale_converter(self, image: np.ndarray) -> np.ndarray:
         image = np.asarray(image)

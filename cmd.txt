@@ -1,0 +1,4 @@
+backend\venv\Scripts\python.exe backend\app.py
+
+cd frontend\App
+npm run dev
