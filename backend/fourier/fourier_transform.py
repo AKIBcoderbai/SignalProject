@@ -59,7 +59,7 @@ class FourierTransform:
             filtered_coeffs[i] = fft_coeffs[i]
 
         reconstructed_signal = BluesteinFFT.ifft_1d(filtered_coeffs * N)
-        reconstructed_points = np.column_stack([reconstructed_signal.real, reconstructed_signal.imag]).tolist()
+        reconstructed_points = np.column_stack([reconstructed_signal.real, reconstructed_signal.imag]).tolist() # pyright: ignore[reportAttributeAccessIssue]
 
         harmonics = []
         for idx in sorted_indices:

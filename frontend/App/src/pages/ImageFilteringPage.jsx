@@ -131,6 +131,7 @@ function ImageFilteringPage() {
     setProcessing(true)
     try {
       const payload = await processImage({ file: selectedFile, filter, cutoff, mode, boost, brush, signal })
+      
       setResult(payload)
       setMessage('Live preview updated.')
     } catch (error) {
