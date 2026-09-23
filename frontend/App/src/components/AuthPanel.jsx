@@ -50,7 +50,7 @@ function AuthPanel({ initialMode = 'signin' }) {
 
       setError(
         emailLimitReached
-          ? 'Email sending is temporarily limited. Wait before requesting another reset link. If you use Supabase’s built-in email sender'
+          ? 'Email sending is temporarily rate limited. Wait a little before requesting another link.'
           : authError?.message || 'Could not complete sign-in. Try again.'
       )
     } finally {

@@ -3,6 +3,7 @@ import AppHeader from './components/AppHeader'
 import AuthPanel from './components/AuthPanel'
 import PasswordPanel from './components/PasswordPanel'
 import SecretWorkspace from './components/SecretWorkspace'
+import GuestExtract from './components/GuestExtract'
 import { setupError, supabase } from './supabaseClient'
 import './App.css'
 
@@ -70,13 +71,14 @@ function App() {
         {setupError && <p className="notice error" role="alert">{setupError}</p>}
         {signOutError && <p className="notice error" role="alert">{signOutError}</p>}
         {supabase && loading && <p className="notice">Checking your session…</p>}
+        {!supabase && <GuestExtract />}
         {supabase && !loading && (session
           ? recoveryMode
             ? <PasswordPanel mode="recovery" onDone={finishRecovery} />
             : settingsOpen
               ? <PasswordPanel mode="change" onDone={() => setSettingsOpen(false)} />
               : <SecretWorkspace key={session.user.id} session={session} />
-          : <AuthPanel initialMode={recoveryMode ? 'reset' : 'signin'} />)}
+          : <><AuthPanel initialMode={recoveryMode ? 'reset' : 'signin'} /><GuestExtract /></>)}
 
         <footer className="footer-note">The image changes slightly to hold the encrypted message. Keep the PNG intact: resizing or JPEG recompression can erase it.</footer>
       </main>

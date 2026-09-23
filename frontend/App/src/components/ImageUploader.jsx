@@ -6,7 +6,7 @@ function ImageUploader({ file, onChange, inputId, mode }) {
 
   return (
     <div className="uploader">
-      <div className="field-heading"><label htmlFor={inputId}>{mode === 'hide' ? 'Source image' : 'Protected PNG'}</label><span>PNG or JPG · max 10 MB</span></div>
+      <div className="field-heading"><label htmlFor={inputId}>{mode === 'hide' ? 'Source image' : mode === 'guest' ? 'Protected PNG for guest extraction' : 'Protected PNG'}</label><span>{mode === 'hide' ? 'PNG or JPG' : 'PNG only'} · max 10 MB</span></div>
       <input id={inputId} type="file" accept={mode === 'hide' ? 'image/png,image/jpeg' : 'image/png'} onChange={select} />
       <label htmlFor={inputId} className="drop-zone">
         <span className="upload-icon">↑</span>

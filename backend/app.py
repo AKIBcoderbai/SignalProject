@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from PIL import Image
 
-from secret_transform import embed, extract
+from secret_transform import analyze_attack, analyze_pair, embed, extract
 from supabase_connection import BUCKET, admin_client, current_user_id
 
 load_dotenv()
@@ -82,10 +82,36 @@ def embed_secret(
 @app.post("/api/secret/extract")
 def extract_secret(
     image: UploadFile = File(...), password: str = Form(...),
-    _user_id: str = Depends(current_user_id),
 ):
     try:
         return {"message": extract(upload_bytes(image), password)}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/secret/analyze")
+def analyze_images(
+    original: UploadFile = File(...), protected: UploadFile = File(...),
+    _user_id: str = Depends(current_user_id),
+):
+    try:
+        return analyze_pair(upload_bytes(original), upload_bytes(protected))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/secret/attack")
+def attack_image(
+    image: UploadFile = File(...), password: str = Form(...),
+    attack: str = Form(...), quality: int | None = Form(None),
+    scale: float | None = Form(None), crop: str | None = Form(None),
+    _user_id: str = Depends(current_user_id),
+):
+    try:
+        return analyze_attack(
+            upload_bytes(image), password, attack,
+            quality=quality, scale=scale, crop=crop,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -109,7 +135,7 @@ def download_image(image_id: UUID, user_id: str = Depends(current_user_id)):
                 .eq("id", str(image_id)).eq("user_id", user_id).limit(1).execute())
         if not rows.data:
             raise HTTPException(status_code=404, detail="Image not found.")
-        png = admin_client().storage.from_(BUCKET).download(rows.data[0]["storage_path"])
+        png = admin_client().storage.from_(BUCKET).download(rows.data[0]["storage_path"]) # type: ignore
         return Response(png, media_type="image/png",
                         headers={"Content-Disposition": f'attachment; filename="{image_id}.png"'})
     except HTTPException:

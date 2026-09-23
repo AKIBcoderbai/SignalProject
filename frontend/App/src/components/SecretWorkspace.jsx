@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { downloadImage, hideMessage, listImages, readMessage } from '../api'
+import { analyzeImages, downloadImage, hideMessage, listImages, readMessage } from '../api'
 import ImageUploader from './ImageUploader'
+import AnalysisPanel from './AnalysisPanel'
+import AttackLab from './AttackLab'
 
 const utf8Size = (value) => new TextEncoder().encode(value).length
 
@@ -17,10 +19,15 @@ function SecretWorkspace({ session }) {
   const [error, setError] = useState('')
   const [images, setImages] = useState([])
   const [galleryError, setGalleryError] = useState('')
+  const [analysis, setAnalysis] = useState(null)
+  const [analysisPending, setAnalysisPending] = useState(false)
+  const [analysisError, setAnalysisError] = useState('')
+  const [lastProtectedFile, setLastProtectedFile] = useState(null)
+  const [lastPassword, setLastPassword] = useState('')
 
   const token = session.access_token
   const capacity = dimensions
-    ? Math.max(0, Math.floor(Math.floor(dimensions.width / 16) * Math.floor(dimensions.height / 16) / 8) - 47)
+    ? Math.max(0, Math.floor(Math.floor(dimensions.width / 16) * Math.floor(dimensions.height / 16) / 8) - 51)
     : null
   const messageBytes = utf8Size(message)
 
@@ -52,6 +59,10 @@ function SecretWorkspace({ session }) {
   function pickFile(nextFile) {
     setResult(null)
     setError('')
+    setAnalysis(null)
+    setAnalysisError('')
+    setLastProtectedFile(null)
+    setLastPassword('')
     if (nextFile && (!['image/png', 'image/jpeg'].includes(nextFile.type) || nextFile.size > 10 * 1024 * 1024 || (mode === 'read' && nextFile.type !== 'image/png'))) {
       setFile(null)
       setError('Choose a valid image under 10 MB. Reading a message requires the protected PNG.')
@@ -66,6 +77,9 @@ function SecretWorkspace({ session }) {
     setPassword('')
     setResult(null)
     setError('')
+    setAnalysis(null)
+    setLastProtectedFile(null)
+    setLastPassword('')
   }
 
   async function submit(event) {
@@ -78,6 +92,11 @@ function SecretWorkspace({ session }) {
         ? await hideMessage({ image: file, message, password, token })
         : await readMessage({ image: file, password, token })
       setResult(mode === 'hide' ? { type: 'hidden', ...response } : { type: 'read', ...response })
+      if (mode === 'hide') {
+        setLastPassword(password)
+        const protectedBlob = await (await fetch(response.protectedImage)).blob()
+        setLastProtectedFile(new File([protectedBlob], 'protected.png', { type: 'image/png' }))
+      }
       setPassword('')
       if (mode === 'hide') {
         setMessage('')
@@ -88,12 +107,24 @@ function SecretWorkspace({ session }) {
         } catch (requestError) {
           setGalleryError(requestError.message)
         }
+
       }
     } catch (requestError) {
       setError(requestError.message)
     } finally {
       setPending(false)
     }
+  }
+
+  async function runAnalysis() {
+    if (!file || !lastProtectedFile) return
+    setAnalysisPending(true); setAnalysisError('')
+    try {
+      const report = await analyzeImages({ original: file, protectedImage: lastProtectedFile, token })
+      setAnalysis({ ...report, before: preview, after: result.protectedImage })
+    }
+    catch (requestError) { setAnalysisError(requestError.message) }
+    finally { setAnalysisPending(false) }
   }
 
   async function getStoredImage(imageId, useForReading = false) {
@@ -133,8 +164,11 @@ function SecretWorkspace({ session }) {
           {error && <p className="notice error" role="alert">{error}</p>}
           <button className="primary-button" type="submit" disabled={pending || !file || password.length < 8 || (mode === 'hide' && (!messageBytes || (capacity !== null && messageBytes > capacity)))}>{pending ? 'Working on image…' : mode === 'hide' ? 'Hide message and save PNG' : 'Read hidden message'}</button>
         </form>
-        {result?.type === 'hidden' && <div className="result-panel" role="status"><span className="eyebrow">Message hidden</span><h3>Your protected image is ready.</h3><p>The saved PNG holds {result.messageBytes} message bytes. Download it before changing or sharing the image.</p><a className="secondary-button" href={result.protectedImage} download={`protected-${result.imageId}.png`}>Download protected PNG ↓</a></div>}
+        {result?.type === 'hidden' && <div className="result-panel" role="status"><span className="eyebrow">Message hidden</span><h3>Your protected image is ready.</h3><p>The saved PNG holds {result.messageBytes} message bytes. Download it before changing or sharing the image.</p><a className="secondary-button" href={result.protectedImage} download={`protected-${result.imageId}.png`}>Download protected PNG ↓</a><button type="button" className="text-button analysis-trigger" onClick={runAnalysis} disabled={analysisPending}>{analysisPending ? 'Measuring…' : 'Analyze image changes'}</button></div>}
         {result?.type === 'read' && <div className="result-panel" role="status"><span className="eyebrow">Message recovered</span><h3>Hidden message</h3><p className="revealed-message">{result.message}</p></div>}
+        {analysisError && <p className="notice error">{analysisError}</p>}
+        <AnalysisPanel analysis={analysis} />
+        {result?.type === 'hidden' && <AttackLab image={lastProtectedFile} password={lastPassword} token={token} />}
       </section>
       <aside className="gallery-column">
         <div className="card gallery-card"><div className="gallery-heading"><span className="eyebrow">Your gallery</span><h2>Protected images</h2><p>Images saved under your account. You still need each image passphrase to read its message.</p></div>
