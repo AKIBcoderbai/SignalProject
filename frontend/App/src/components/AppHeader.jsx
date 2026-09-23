@@ -1,25 +1,13 @@
-import { Link, useLocation } from 'react-router-dom'
-
-function AppHeader() {
-  const location = useLocation()
+function AppHeader({ email, onSignOut, onChangePassword }) {
   return (
     <header className="topbar">
-      <Link className="brand-link" to="/" aria-label="Fourier Lab home">
-        <span className="brand-mark">FT</span>
-        <span>
-          <span className="eyebrow">Frequency studio</span>
-          <strong>Fourier Transform Lab</strong>
-        </span>
-      </Link>
-      <nav className="header-nav">
-        <Link className={location.pathname === '/' ? 'nav-item active' : 'nav-item'} to="/">Home</Link>
-        <Link className={location.pathname === '/features/image-filtering' ? 'nav-item active' : 'nav-item'} to="/features/image-filtering">Image Filter</Link>
-        <Link className={location.pathname === '/features/shape-drawer' ? 'nav-item active' : 'nav-item'} to="/features/shape-drawer">Shape Drawer</Link>
-      </nav>
-      <span className="status-dot">Local workspace</span>
+      <div className="brand" aria-label="Frequency Seal">
+        <span className="brand-mark">F<span>·</span></span>
+        <div><strong>Frequency Seal</strong><small>Hidden messages in images</small></div>
+      </div>
+      {email && <div className="account"><span title={email}>{email}</span><button className="text-button" type="button" onClick={onChangePassword}>Change password</button><button className="text-button" type="button" onClick={onSignOut}>Sign out</button></div>}
     </header>
   )
 }
 
 export default AppHeader
-
