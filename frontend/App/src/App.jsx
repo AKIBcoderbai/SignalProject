@@ -1,25 +1,87 @@
-import { Route, Routes } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import AppHeader from './components/AppHeader'
-import HomePage from './pages/HomePage'
-import ImageFilteringPage from './pages/ImageFilteringPage'
-import ShapeDrawerPage from './pages/ShapeDrawerPage'
-import NotFoundPage from './pages/NotFoundPage'
+import AuthPanel from './components/AuthPanel'
+import PasswordPanel from './components/PasswordPanel'
+import SecretWorkspace from './components/SecretWorkspace'
+import { setupError, supabase } from './supabaseClient'
 import './App.css'
 
 function App() {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [signOutError, setSignOutError] = useState('')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [recoveryMode, setRecoveryMode] = useState(() => new URLSearchParams(window.location.search).has('recovery'))
+
+  useEffect(() => {
+    if (!supabase) return
+    let active = true
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (active) {
+        setSession(nextSession)
+        if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true)
+      }
+    })
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return
+      if (error) setSignOutError(error.message)
+      setSession(data.session)
+    }).catch((error) => {
+      if (active) setSignOutError(error.message)
+    }).finally(() => {
+      if (active) setLoading(false)
+    })
+    return () => { active = false; subscription.unsubscribe() }
+  }, [])
+
+  async function signOut() {
+    const { error } = await supabase.auth.signOut()
+    if (error) setSignOutError(error.message)
+    else {
+      setSignOutError('')
+      setSettingsOpen(false)
+      setRecoveryMode(false)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }
+
+  function finishRecovery() {
+    setRecoveryMode(false)
+    window.history.replaceState({}, '', window.location.pathname)
+  }
+
   return (
     <div className="app-shell">
-      <AppHeader />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/features/image-filtering" element={<ImageFilteringPage />} />
-        <Route path="/features/spectrum-viewer" element={<ImageFilteringPage />} />
-        <Route path="/features/shape-drawer" element={<ShapeDrawerPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <AppHeader email={session?.user?.email} onSignOut={signOut} onChangePassword={() => setSettingsOpen(true)} />
+      <main className="page-wrap">
+        <section className="intro" aria-labelledby="page-title">
+          <div className="intro-copy">
+            <span className="eyebrow">A Fourier image experiment</span>
+            <h1 id="page-title">A message in the image.<br /><em>Only with the passphrase.</em></h1>
+            <p>Place encrypted text inside a picture you can still recognize. Keep the resulting PNG and the image passphrase to read it later.</p>
+          </div>
+          <div className="signal-art" aria-hidden="true">
+            <div className="signal-orbit orbit-one" /><div className="signal-orbit orbit-two" />
+            <div className="signal-orbit orbit-three" /><span className="signal-core">F</span>
+            <span className="signal-tag">IMAGE + SECRET</span>
+          </div>
+        </section>
+
+        {setupError && <p className="notice error" role="alert">{setupError}</p>}
+        {signOutError && <p className="notice error" role="alert">{signOutError}</p>}
+        {supabase && loading && <p className="notice">Checking your session…</p>}
+        {supabase && !loading && (session
+          ? recoveryMode
+            ? <PasswordPanel mode="recovery" onDone={finishRecovery} />
+            : settingsOpen
+              ? <PasswordPanel mode="change" onDone={() => setSettingsOpen(false)} />
+              : <SecretWorkspace key={session.user.id} session={session} />
+          : <AuthPanel initialMode={recoveryMode ? 'reset' : 'signin'} />)}
+
+        <footer className="footer-note">The image changes slightly to hold the encrypted message. Keep the PNG intact: resizing or JPEG recompression can erase it.</footer>
+      </main>
     </div>
   )
 }
 
 export default App
-
