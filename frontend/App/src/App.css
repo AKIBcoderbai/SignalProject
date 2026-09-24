@@ -57,6 +57,16 @@
   color: #91e3ce;
 }
 
+.brand-logo-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(23, 62, 108, 0.15);
+  border: 1px solid #d2e1e9;
+  flex-shrink: 0;
+}
+
 .brand strong {
   display: block;
   font-size: 17px;
@@ -947,6 +957,12 @@
     width: 36px;
     height: 36px;
     font-size: 23px;
+  }
+
+  .brand-logo-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
   }
 
   .account {
