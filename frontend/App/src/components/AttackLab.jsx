@@ -18,7 +18,7 @@ function AttackLab({ image, password, token }) {
   if (!image) return null
   return <section className="card attack-lab">
     <div className="panel-heading"><div><span className="eyebrow">Attack lab</span><h3>Stress-test the protected PNG</h3></div></div>
-    <p className="panel-copy">Compare lossless changes with JPEG, resizing and cropping. The protected PNG is never overwritten.</p>
+    <p className="panel-copy">Test recovery after JPEG, resizing, and cropping. New robust images carry repeated, error-corrected tiles; older images still use the original format. The protected PNG is never overwritten.</p>
     <form className="attack-controls" onSubmit={submit}>
       <label>Transformation<select value={attack} onChange={(event) => { setAttack(event.target.value); setResult(null) }}><option value="png">PNG re-save (control)</option><option value="red_shift">Change red channel (+20)</option><option value="jpeg">JPEG conversion</option><option value="resize">Resize</option><option value="crop">Crop</option><option value="screenshot">Screenshot-like</option></select></label>
       {attack === 'jpeg' && <label>Quality<input type="number" min="5" max="95" value={quality} onChange={(event) => setQuality(event.target.value)} /></label>}
@@ -27,7 +27,16 @@ function AttackLab({ image, password, token }) {
       <button className="secondary-button" disabled={pending}>{pending ? 'Testing…' : 'Run attack'}</button>
     </form>
     {error && <p className="notice error">{error}</p>}
-    {result && <div className="attack-result"><strong>{result.success ? 'Message recovered' : 'Extraction failed'}</strong><p>{result.success ? result.attack === 'png' ? 'PNG re-saving preserved the pixel values and hidden bits.' : 'This change left the blue channel carrying the bits intact.' : 'This transformation changed Fourier bits or their block positions. Authenticated decryption rejects even one corrupted bit.'}</p>{result.success && <p className="revealed-message">{result.message}</p>}{result.image && <img src={result.image} alt="Transformed image" />}</div>}
+    {result && <div className="attack-result">
+      <strong>{result.success ? 'Message recovered' : 'Extraction failed'}</strong>
+      <p>{result.success ? result.recovery?.format === 'v3'
+        ? `Robust Fourier recovery found a tile and corrected ${result.recovery.correctedBytes} byte(s). Detected scale: ${Number(result.recovery.scale).toFixed(3)}×; pilot match: ${result.recovery.pilotScore}/128.`
+        : `The ${result.recovery?.format || 'older'} format survived this change.`
+        : 'The tile, synchronization pattern, or authenticated payload did not survive this transformation. Try a larger image, shorter message, or less severe change.'}</p>
+      {result.success && <p className="revealed-message">{result.message}</p>}
+      {result.image && <a className="secondary-button" href={result.image} download={`attacked-${result.attack}.${result.image.startsWith('data:image/jpeg') ? 'jpg' : 'png'}`}>Download transformed image</a>}
+      {result.image && <img src={result.image} alt="Transformed image" />}
+    </div>}
   </section>
 }
 export default AttackLab

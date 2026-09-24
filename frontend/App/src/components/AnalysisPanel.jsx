@@ -15,7 +15,7 @@ function AnalysisPanel({ analysis }) {
       {analysis.differenceImage && <figure><img src={analysis.differenceImage} alt="Difference intensity amplified four times" /><figcaption>Pixel difference ×4</figcaption></figure>}
     </div>}
     {(analysis.spectrumImage || analysis.coefficientBit0) && <div className="visualization-grid">
-      {analysis.spectrumImage && <figure><img src={analysis.spectrumImage} alt="Fourier magnitude spectrum of a blue channel block" /><figcaption>16×16 block spectrum (blue channel)</figcaption></figure>}
+      {analysis.spectrumImage && <figure><img src={analysis.spectrumImage} alt="Fourier magnitude spectrum of an image block" /><figcaption>{analysis.spectrumMetadata?.blockSize}×{analysis.spectrumMetadata?.blockSize} block spectrum ({analysis.spectrumMetadata?.channel})</figcaption></figure>}
       {analysis.coefficientBit0 && <figure><img src={analysis.coefficientBit0} alt="Sample block encoding bit zero" /><figcaption>Sample block with bit 0</figcaption></figure>}
       {analysis.coefficientBit1 && <figure><img src={analysis.coefficientBit1} alt="Sample block encoding bit one" /><figcaption>Same block with bit 1</figcaption></figure>}
     </div>}

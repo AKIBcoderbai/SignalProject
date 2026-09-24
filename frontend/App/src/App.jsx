@@ -80,7 +80,7 @@ function App() {
               : <SecretWorkspace key={session.user.id} session={session} />
           : <><AuthPanel initialMode={recoveryMode ? 'reset' : 'signin'} /><GuestExtract /></>)}
 
-        <footer className="footer-note">The image changes slightly to hold the encrypted message. Keep the PNG intact: resizing or JPEG recompression can erase it.</footer>
+        <footer className="footer-note">The image changes slightly to hold encrypted text. New short-message images may survive some JPEG compression, cropping, and resizing; recovery is not guaranteed after severe changes.</footer>
       </main>
     </div>
   )
