@@ -5,6 +5,7 @@ import ImageUploader from './ImageUploader'
 function GuestExtract() {
   const [file, setFile] = useState(null)
   const [password, setPassword] = useState('')
+  const [readMode, setReadMode] = useState('robust')
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
@@ -12,17 +13,22 @@ function GuestExtract() {
   async function submit(event) {
     event.preventDefault()
     setPending(true); setError(''); setResult(null)
-    try { setResult((await readMessage({ image: file, password })).message) }
+    try { setResult((await readMessage({ image: file, password, mode: readMode })).message) }
     catch (requestError) { setError(requestError.message) }
     finally { setPending(false) }
   }
 
   return <section className="card guest-panel">
     <span className="eyebrow">Guest extraction</span>
-    <h2>Read a protected PNG</h2>
-    <p>No account is needed. Your PNG and passphrase are sent to the Python server for extraction and are not saved there.</p>
+    <h2>Read a protected image</h2>
+    <p>No account is needed. Your image and passphrase are sent to the Python server for extraction and are not saved there. New robust images may also survive JPEG or cropping.</p>
     <form className="form-stack" onSubmit={submit}>
-      <ImageUploader file={file} onChange={(next) => { setFile(null); setResult(null); setError(''); if (next && (next.type !== 'image/png' || next.size > 10 * 1024 * 1024)) setError('Choose a protected PNG under 10 MB.'); else setFile(next) }} inputId="guest-upload" mode="guest" />
+      <ImageUploader file={file} onChange={(next) => { setFile(null); setResult(null); setError(''); if (next && (!['image/png', 'image/jpeg'].includes(next.type) || next.size > 10 * 1024 * 1024)) setError('Choose a PNG or JPEG under 10 MB.'); else setFile(next) }} inputId="guest-upload" mode="guest" />
+      <div className="segment-control" role="group" aria-label="Choose image reading mode">
+        <button type="button" className={readMode === 'robust' ? 'selected' : ''} onClick={() => { setReadMode('robust'); setResult(null); setError('') }}>Robust</button>
+        <button type="button" className={readMode === 'normal' ? 'selected' : ''} onClick={() => { setReadMode('normal'); setResult(null); setError('') }}>Normal</button>
+      </div>
+      <small className="field-help">{readMode === 'robust' ? 'For short robust messages, including attacked images.' : 'For larger PNG messages and older protected images.'}</small>
       <label>Image passphrase<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required placeholder="At least 8 characters" /></label>
       {error && <p className="notice error" role="alert">{error}</p>}
       <button className="primary-button" disabled={pending || !file || password.length < 8}>{pending ? 'Reading…' : 'Read hidden message'}</button>

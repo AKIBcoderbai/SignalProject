@@ -19,6 +19,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 from fourier.fourier_transform import FourierTransform
+import robust_transform
 
 BLOCK = 16
 STEP = 256
@@ -191,7 +192,7 @@ def _decode_v2(blue: np.ndarray, password: str, payload_length: int, salt: bytes
         raise ValueError("Incorrect image passphrase or damaged image.") from exc
 
 
-def embed(image_bytes: bytes, message: str, password: str) -> tuple[bytes, int]:
+def embed_v2(image_bytes: bytes, message: str, password: str) -> tuple[bytes, int]:
     image = _load_rgb(image_bytes)
     if not message:
         raise ValueError("Enter a message.")
@@ -222,6 +223,21 @@ def embed(image_bytes: bytes, message: str, password: str) -> tuple[bytes, int]:
     return png, capacity_bytes(png)
 
 
+def embed(image_bytes: bytes, message: str, password: str, robust: bool = True) -> tuple[bytes, int]:
+    image = _load_rgb(image_bytes)
+    if not robust or min(image.shape[:2]) < robust_transform.TILE:
+        return embed_v2(image_bytes, message, password)
+    if len(password) < 8:
+        raise ValueError("Use an image passphrase of at least 8 characters.")
+    encoded = robust_transform.embed(image, message, password)
+    output = BytesIO()
+    Image.fromarray(encoded, mode="RGB").save(output, format="PNG")
+    png = output.getvalue()
+    if extract(png, password) != message:
+        raise ValueError("This image cannot reliably carry the robust message. Try another image.")
+    return png, robust_transform.capacity_bytes(image.shape[1], image.shape[0])
+
+
 def embed_legacy(image_bytes: bytes, message: str, password: str) -> bytes:
     image = _load_rgb(image_bytes)
     if not message:
@@ -243,14 +259,38 @@ def embed_legacy(image_bytes: bytes, message: str, password: str) -> bytes:
     return output.getvalue()
 
 
-def extract(image_bytes: bytes, password: str) -> str:
+def extract_with_report(image_bytes: bytes, password: str, mode: str = "auto") -> tuple[str, dict]:
+    if mode not in {"auto", "robust", "normal"}:
+        raise ValueError("Choose Robust or Normal reading mode.")
     image = _load_rgb(image_bytes)
+    if mode == "robust":
+        try:
+            return robust_transform.extract_auto(image, password)
+        except ValueError as exc:
+            raise ValueError("No robust message recovered. Check the image, password, or attack strength.") from exc
     blue = image[:, :, 2]
-    v2_header = _read_v2_header(blue)
+    try:
+        v2_header = _read_v2_header(blue)
+    except ValueError:
+        v2_header = None
     if v2_header is not None:
         payload_length, salt, nonce, positions = v2_header
-        return _decode_v2(blue, password, payload_length, salt, nonce, positions)
-    return _legacy_extract(image, password)
+        return _decode_v2(blue, password, payload_length, salt, nonce, positions), {"format": "v2"}
+    if min(image.shape[:2]) >= BLOCK:
+        try:
+            return _legacy_extract(image, password), {"format": "v1"}
+        except ValueError:
+            pass
+    if mode == "normal":
+        raise ValueError("No normal message recovered. Choose Robust for images made in robust mode.")
+    try:
+        return robust_transform.extract_auto(image, password)
+    except ValueError as exc:
+        raise ValueError("Incorrect image passphrase or damage exceeds recovery capacity.") from exc
+
+
+def extract(image_bytes: bytes, password: str, mode: str = "auto") -> str:
+    return extract_with_report(image_bytes, password, mode)[0]
 
 
 def image_metrics(original_image: bytes, transformed_image: bytes) -> dict:
@@ -278,9 +318,11 @@ def difference_image(original_image: bytes, transformed_image: bytes, magnify: i
     return output.getvalue()
 
 
-def spectrum_image(image_bytes: bytes) -> tuple[bytes, dict]:
+def spectrum_image(image_bytes: bytes, robust: bool = False) -> tuple[bytes, dict]:
     image = _load_rgb(image_bytes)
-    blue_block = image[:BLOCK, :BLOCK, 2].astype(np.float64)
+    size = robust_transform.BLOCK if robust else BLOCK
+    blue_block = (robust_transform._luma(image)[:size, :size] if robust
+                  else image[:size, :size, 2]).astype(np.float64)
     spectrum = FourierTransform(blue_block).forward()
     magnitude = np.log1p(np.abs(np.fft.fftshift(spectrum)))
     peak = float(magnitude.max())
@@ -289,11 +331,29 @@ def spectrum_image(image_bytes: bytes) -> tuple[bytes, dict]:
         encoded = np.rint(magnitude * 255 / peak).astype(np.uint8)
     output = BytesIO()
     Image.fromarray(encoded, mode="L").resize((256, 256), Image.Resampling.NEAREST).save(output, format="PNG")
-    return output.getvalue(), {"peak": peak, "rows": int(encoded.shape[0]), "columns": int(encoded.shape[1])}
+    return output.getvalue(), {"peak": peak, "rows": int(encoded.shape[0]), "columns": int(encoded.shape[1]),
+                                "blockSize": size, "channel": "luminance" if robust else "blue"}
 
 
-def coefficient_bit_demo(image_bytes: bytes) -> tuple[bytes, bytes, dict]:
+def coefficient_bit_demo(image_bytes: bytes, robust: bool = False) -> tuple[bytes, bytes, dict]:
     image = _load_rgb(image_bytes)
+    if robust:
+        size = robust_transform.BLOCK
+        block = robust_transform._luma(image)[:size, :size].astype(np.float64)
+        spectrum = np.fft.fft2(block)
+        y, x = robust_transform.COEFFICIENT
+        current = spectrum[y, x]
+        output = []
+        for bit in (0, 1):
+            changed = spectrum.copy()
+            nearest = np.rint((current.real / robust_transform.STEP - bit) / 2)
+            changed[y, x] = (2 * nearest + bit) * robust_transform.STEP + 1j * current.imag
+            changed[-y, -x] = changed[y, x].conjugate()
+            result = np.clip(np.rint(np.fft.ifft2(changed).real), 0, 255).astype(np.uint8)
+            encoded = BytesIO()
+            Image.fromarray(result, mode="L").resize((256, 256), Image.Resampling.NEAREST).save(encoded, format="PNG")
+            output.append(encoded.getvalue())
+        return output[0], output[1], {"coefficient": {"y": y, "x": x}, "real": float(current.real), "imaginary": float(current.imag)}
     for top, left in _block_positions(*image.shape[:2]):
         candidate = image[top:top + BLOCK, left:left + BLOCK, 2]
         try:
@@ -371,10 +431,10 @@ def analyze_attack(image_bytes: bytes, password: str, attack: str, quality: int 
     transformed = apply_attack(image_bytes, attack, quality=quality, scale=scale, crop=crop)
     metrics = image_metrics(image_bytes, transformed)
     try:
-        message = extract(transformed, password)
-        result = {"success": True, "message": message}
+        message, recovery = extract_with_report(transformed, password)
+        result = {"success": True, "message": message, "recovery": recovery}
     except ValueError:
-        result = {"success": False, "message": None}
+        result = {"success": False, "message": None, "recovery": None}
     return {
         "attack": attack,
         **result,
@@ -392,8 +452,9 @@ def analyze_pair(original_image: bytes, protected_image: bytes) -> dict:
         raise ValueError("The original and protected images must have matching dimensions.")
     metrics = image_metrics(original_image, protected_image)
     diff = difference_image(original_image, protected_image)
-    spectrum, spectrum_meta = spectrum_image(protected_image)
-    bit_zero, bit_one, bit_meta = coefficient_bit_demo(protected_image)
+    robust = robust_transform.looks_like_v3(protected)
+    spectrum, spectrum_meta = spectrum_image(protected_image, robust=robust)
+    bit_zero, bit_one, bit_meta = coefficient_bit_demo(protected_image, robust=robust)
     return {
         "metrics": metrics,
         "changedPixels": int(np.count_nonzero(np.any(original != protected, axis=2))),

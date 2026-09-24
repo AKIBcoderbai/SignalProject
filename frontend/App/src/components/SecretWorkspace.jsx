@@ -12,6 +12,8 @@ function SecretWorkspace({ session }) {
   const [preview, setPreview] = useState('')
   const [dimensions, setDimensions] = useState(null)
   const [message, setMessage] = useState('')
+  const [robust, setRobust] = useState(true)
+  const [readMode, setReadMode] = useState('robust')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [pending, setPending] = useState(false)
@@ -27,7 +29,9 @@ function SecretWorkspace({ session }) {
 
   const token = session.access_token
   const capacity = dimensions
-    ? Math.max(0, Math.floor(Math.floor(dimensions.width / 16) * Math.floor(dimensions.height / 16) / 8) - 51)
+    ? robust && Math.min(dimensions.width, dimensions.height) >= 256
+      ? 23
+      : Math.max(0, Math.floor(Math.floor(dimensions.width / 16) * Math.floor(dimensions.height / 16) / 8) - 51)
     : null
   const messageBytes = utf8Size(message)
 
@@ -63,9 +67,9 @@ function SecretWorkspace({ session }) {
     setAnalysisError('')
     setLastProtectedFile(null)
     setLastPassword('')
-    if (nextFile && (!['image/png', 'image/jpeg'].includes(nextFile.type) || nextFile.size > 10 * 1024 * 1024 || (mode === 'read' && nextFile.type !== 'image/png'))) {
+    if (nextFile && (!['image/png', 'image/jpeg'].includes(nextFile.type) || nextFile.size > 10 * 1024 * 1024)) {
       setFile(null)
-      setError('Choose a valid image under 10 MB. Reading a message requires the protected PNG.')
+      setError('Choose a PNG or JPEG image under 10 MB.')
       return
     }
     setFile(nextFile)
@@ -89,8 +93,8 @@ function SecretWorkspace({ session }) {
     setPending(true)
     try {
       const response = mode === 'hide'
-        ? await hideMessage({ image: file, message, password, token })
-        : await readMessage({ image: file, password, token })
+        ? await hideMessage({ image: file, message, password, robust, token })
+        : await readMessage({ image: file, password, mode: readMode, token })
       setResult(mode === 'hide' ? { type: 'hidden', ...response } : { type: 'read', ...response })
       if (mode === 'hide') {
         setLastPassword(password)
@@ -158,13 +162,21 @@ function SecretWorkspace({ session }) {
         <form className="form-stack" onSubmit={submit}>
           <ImageUploader key={mode} file={file} onChange={pickFile} inputId={`upload-${mode}`} mode={mode} />
           {preview && <div className="image-preview"><img src={preview} alt="Selected image preview" /><span>{dimensions ? `${dimensions.width} × ${dimensions.height} pixels` : 'Reading image…'}</span></div>}
+          {mode === 'hide' && <><div className="segment-control" role="group" aria-label="Choose message protection mode">
+            <button type="button" className={robust ? 'selected' : ''} onClick={() => setRobust(true)}>Robust short message</button>
+            <button type="button" className={!robust ? 'selected' : ''} onClick={() => setRobust(false)}>Larger PNG message</button>
+          </div><small className="field-help">{robust ? 'Up to 23 UTF-8 bytes. May recover after some JPEG, crop and resize attacks.' : 'Higher capacity using the original method. Keep the PNG unchanged.'}</small></>}
+          {mode === 'read' && <><div className="segment-control" role="group" aria-label="Choose image reading mode">
+            <button type="button" className={readMode === 'robust' ? 'selected' : ''} onClick={() => { setReadMode('robust'); setError(''); setResult(null) }}>Robust</button>
+            <button type="button" className={readMode === 'normal' ? 'selected' : ''} onClick={() => { setReadMode('normal'); setError(''); setResult(null) }}>Normal</button>
+          </div><small className="field-help">{readMode === 'robust' ? 'For short robust messages, including attacked images.' : 'For larger PNG messages and older protected images.'}</small></>}
           {mode === 'hide' && <label>Secret message<textarea rows="4" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Tomorrow is CT." maxLength={3000} required />
             <small className={capacity !== null && messageBytes > capacity ? 'capacity over' : 'capacity'}>{capacity === null ? 'Choose an image to check capacity.' : `${messageBytes} / ${capacity} UTF-8 bytes available`}</small></label>}
           <label>Image passphrase<span className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} autoComplete="new-password" placeholder="At least 8 characters" required /><button type="button" onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Hide' : 'Show'}</button></span><small className="field-help">This is separate from your account password. Save it: it cannot be recovered.</small></label>
           {error && <p className="notice error" role="alert">{error}</p>}
           <button className="primary-button" type="submit" disabled={pending || !file || password.length < 8 || (mode === 'hide' && (!messageBytes || (capacity !== null && messageBytes > capacity)))}>{pending ? 'Working on image…' : mode === 'hide' ? 'Hide message and save PNG' : 'Read hidden message'}</button>
         </form>
-        {result?.type === 'hidden' && <div className="result-panel" role="status"><span className="eyebrow">Message hidden</span><h3>Your protected image is ready.</h3><p>The saved PNG holds {result.messageBytes} message bytes. Download it before changing or sharing the image.</p><a className="secondary-button" href={result.protectedImage} download={`protected-${result.imageId}.png`}>Download protected PNG ↓</a><button type="button" className="text-button analysis-trigger" onClick={runAnalysis} disabled={analysisPending}>{analysisPending ? 'Measuring…' : 'Analyze image changes'}</button></div>}
+        {result?.type === 'hidden' && <div className="result-panel" role="status"><span className="eyebrow">Message hidden · {result.format === 'v3' ? 'Robust' : 'Larger PNG'}</span><h3>Your protected image is ready.</h3><p>The saved PNG holds {result.messageBytes} message bytes. Download it before changing or sharing the image.</p><a className="secondary-button" href={result.protectedImage} download={`protected-${result.imageId}.png`}>Download protected PNG ↓</a><button type="button" className="text-button analysis-trigger" onClick={runAnalysis} disabled={analysisPending}>{analysisPending ? 'Measuring…' : 'Analyze image changes'}</button></div>}
         {result?.type === 'read' && <div className="result-panel" role="status"><span className="eyebrow">Message recovered</span><h3>Hidden message</h3><p className="revealed-message">{result.message}</p></div>}
         {analysisError && <p className="notice error">{analysisError}</p>}
         <AnalysisPanel analysis={analysis} />
@@ -176,7 +188,7 @@ function SecretWorkspace({ session }) {
           {!galleryError && images.length === 0 && <p className="empty-gallery">Your protected images will appear here after you hide a message.</p>}
           <ul className="gallery-list">{images.map((image) => <li key={image.id}><div><strong>{image.width} × {image.height} image</strong><small>{new Date(image.created_at).toLocaleDateString()} · {image.message_bytes} message bytes</small></div><div className="gallery-actions"><button type="button" onClick={() => getStoredImage(image.id, true)}>Read</button><button type="button" onClick={() => getStoredImage(image.id)}>Download</button></div></li>)}</ul>
         </div>
-        <div className="method-note"><span className="eyebrow">How it works</span><p>Small changes to Fourier coefficients carry encrypted bits. Your image stays recognizable; the saved file must stay in PNG format for reliable recovery.</p></div>
+        <div className="method-note"><span className="eyebrow">How it works</span><p>Robust mode uses repeated Fourier tiles with error correction. Short messages may survive JPEG, cropping or resizing. Use images at least 512 × 512 for crop tests; download the original PNG for the best quality.</p></div>
       </aside>
     </div>
   )

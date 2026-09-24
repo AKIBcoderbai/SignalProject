@@ -23,6 +23,7 @@ app = FastAPI(title="Fourier Image API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[x.strip() for x in os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
 )
@@ -45,10 +46,11 @@ def health():
 @app.post("/api/secret/embed")
 def embed_secret(
     image: UploadFile = File(...), message: str = Form(...),
-    password: str = Form(...), user_id: str = Depends(current_user_id),
+    password: str = Form(...), robust: bool = Form(True),
+    user_id: str = Depends(current_user_id),
 ):
     try:
-        png, capacity = embed(upload_bytes(image), message, password)
+        png, capacity = embed(upload_bytes(image), message, password, robust=robust)
         with Image.open(io.BytesIO(png)) as result:
             width, height = result.size
     except ValueError as exc:
@@ -76,15 +78,17 @@ def embed_secret(
 
     return {"imageId": image_id, "protectedImage": "data:image/png;base64," +
             base64.b64encode(png).decode("ascii"), "capacityBytes": capacity,
-            "messageBytes": len(message.encode("utf-8"))}
+            "messageBytes": len(message.encode("utf-8")),
+            "format": "v3" if robust and min(width, height) >= 256 else "v2"}
 
 
 @app.post("/api/secret/extract")
 def extract_secret(
     image: UploadFile = File(...), password: str = Form(...),
+    mode: str = Form("auto"),
 ):
     try:
-        return {"message": extract(upload_bytes(image), password)}
+        return {"message": extract(upload_bytes(image), password, mode=mode)}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
