@@ -6,7 +6,7 @@ import AttackLab from './AttackLab'
 
 const utf8Size = (value) => new TextEncoder().encode(value).length
 
-function SecretWorkspace({ session }) {
+function SecretWorkspace({ session, onBack }) {
   const [mode, setMode] = useState('hide')
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState('')
@@ -154,6 +154,7 @@ function SecretWorkspace({ session }) {
   return (
     <div className="workspace-grid">
       <section className="card work-card" aria-label="Hidden message workspace">
+        {onBack && <button type="button" className="back-button workspace-back" onClick={onBack}>← All features</button>}
         <div className="work-heading"><div><span className="eyebrow">Workspace</span><h2>Work with an image</h2></div><span className="local-pill">PNG output</span></div>
         <div className="segment-control mode-tabs" role="group" aria-label="Choose an action">
           <button type="button" className={mode === 'hide' ? 'selected' : ''} onClick={() => switchMode('hide')}>Hide a message</button>
@@ -188,7 +189,6 @@ function SecretWorkspace({ session }) {
           {!galleryError && images.length === 0 && <p className="empty-gallery">Your protected images will appear here after you hide a message.</p>}
           <ul className="gallery-list">{images.map((image) => <li key={image.id}><div><strong>{image.width} × {image.height} image</strong><small>{new Date(image.created_at).toLocaleDateString()} · {image.message_bytes} message bytes</small></div><div className="gallery-actions"><button type="button" onClick={() => getStoredImage(image.id, true)}>Read</button><button type="button" onClick={() => getStoredImage(image.id)}>Download</button></div></li>)}</ul>
         </div>
-        <div className="method-note"><span className="eyebrow">How it works</span><p>Robust mode uses repeated Fourier tiles with error correction. Short messages may survive JPEG, cropping or resizing. Use images at least 512 × 512 for crop tests; download the original PNG for the best quality.</p></div>
       </aside>
     </div>
   )

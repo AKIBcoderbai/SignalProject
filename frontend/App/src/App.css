@@ -243,6 +243,12 @@
   padding: 16px 0 45px;
 }
 
+.auth-layout.auth-only {
+  display: block;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
 .auth-context {
   padding: 12px 0;
 }
@@ -761,6 +767,113 @@
   margin-top: 20px;
 }
 
+/* --- Authenticated feature chooser and independent workspaces --- */
+.feature-menu {
+  margin: 0 0 28px;
+  padding: clamp(20px, 4vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 12px 35px rgba(28, 58, 88, .055);
+}
+
+.feature-menu-heading h2, .feature-page-heading h2 {
+  margin: 8px 0 8px;
+  color: #15334f;
+  font: 500 clamp(25px, 3.5vw, 34px) Georgia, serif;
+}
+
+.feature-menu-heading p, .feature-page-heading p {
+  max-width: 650px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.feature-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.feature-option {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid #cddde4;
+  border-radius: 10px;
+  background: #f7fbfc;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.feature-option:hover, .feature-option.selected {
+  transform: translateY(-2px);
+  border-color: #5eaaa5;
+  background: #eff9f6;
+}
+
+.feature-number {
+  color: var(--teal);
+  font: 700 11px Consolas, monospace;
+  letter-spacing: .1em;
+}
+
+.feature-option strong {
+  color: #15334f;
+  font: 500 21px Georgia, serif;
+}
+
+.feature-option small {
+  max-width: 220px;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 12px;
+}
+
+.feature-arrow {
+  position: absolute;
+  right: 16px;
+  bottom: 15px;
+  color: var(--blue);
+  font-size: 20px;
+}
+
+.feature-workspace {
+  margin-bottom: 34px;
+}
+
+.back-button {
+  border: 0;
+  padding: 5px 0;
+  background: transparent;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.feature-page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin: 14px 0 20px;
+}
+
+.feature-upload-card {
+  padding: clamp(16px, 3vw, 24px);
+  margin-bottom: 18px;
+}
+
+.feature-upload-card .uploader { margin: 0; }
+
 .guest-panel {
   max-width: 620px;
   padding: clamp(20px, 4vw, 32px);
@@ -904,12 +1017,133 @@
   margin-top: 4px;
 }
 
+/* --- Brush Signal Lab --- */
+.brush-editor {
+  margin-top: 24px;
+  padding: clamp(16px, 3vw, 24px);
+  background: #fbfdfc;
+}
+
+.brush-controls {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.4fr) repeat(2, minmax(125px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin: 16px 0;
+}
+
+.brush-controls label {
+  display: grid;
+  gap: 6px;
+  color: #2a465c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.brush-controls select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #b9cad8;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+}
+
+.brush-controls input[type=range] {
+  width: 100%;
+  accent-color: var(--teal);
+}
+
+.brush-controls output {
+  color: var(--teal);
+  font: 700 11px Consolas, monospace;
+}
+
+.brush-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  overflow: hidden;
+  border: 1px solid #bdd5d7;
+  border-radius: 10px;
+  background: #e9f1f2;
+}
+
+.brush-stage canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 620px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.brush-stage > span {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: #173e6cdd;
+  color: white;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.brush-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.brush-result {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.brush-result figure {
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #dce8e9;
+  border-radius: 8px;
+  background: white;
+}
+
+.brush-result img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  background: #edf3f6;
+  border-radius: 5px;
+}
+
+.brush-result figcaption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.brush-result .secondary-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
 /* ============================================================
    RESPONSIVE DESIGN (Tablets / iPads & Mobile)
    ============================================================ */
 
 /* --- iPads & Tablets (Portrait and Landscape: <= 1024px) --- */
 @media (max-width: 1024px) {
+  .feature-options { grid-template-columns: 1fr; }
+
+  .brush-controls { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+
   .intro {
     grid-template-columns: 1fr;
     gap: 28px;
@@ -1008,6 +1242,11 @@
 
 /* --- Small Mobile Phones (<= 480px) --- */
 @media (max-width: 480px) {
+  .feature-page-heading { display: grid; }
+
+  .brush-controls { grid-template-columns: 1fr; }
+  .brush-result { grid-template-columns: 1fr; }
+
   .page-wrap {
     width: calc(100% - 24px);
   }

@@ -87,3 +87,15 @@ export async function listImages(token) {
 export async function downloadImage(id, token) {
   return (await callApi(`/api/secret/images/${encodeURIComponent(id)}`, token)).blob()
 }
+
+export async function applyBrushEdit({ image, operation, mode, brushSize, strength, strokes, channel, token }) {
+  const body = new FormData()
+  body.append('image', image)
+  body.append('operation', operation)
+  body.append('mode', mode)
+  body.append('brush_size', brushSize)
+  body.append('strength', strength)
+  body.append('strokes', JSON.stringify(strokes))
+  body.append('channel', channel)
+  return (await callApi('/api/image-edit/brush', token, { method: 'POST', body })).json()
+}

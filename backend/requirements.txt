@@ -9,3 +9,4 @@ cryptography>=44,<47
 argon2-cffi>=23,<26
 scikit-image>=0.24,<1
 reedsolo>=1.7,<2
+pytest>=8,<10
