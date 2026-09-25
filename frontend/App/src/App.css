@@ -904,12 +904,131 @@
   margin-top: 4px;
 }
 
+/* --- Brush Signal Lab --- */
+.brush-editor {
+  margin-top: 24px;
+  padding: clamp(16px, 3vw, 24px);
+  background: #fbfdfc;
+}
+
+.brush-controls {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.4fr) repeat(2, minmax(125px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin: 16px 0;
+}
+
+.brush-controls label {
+  display: grid;
+  gap: 6px;
+  color: #2a465c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.brush-controls select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #b9cad8;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+}
+
+.brush-controls input[type=range] {
+  width: 100%;
+  accent-color: var(--teal);
+}
+
+.brush-controls output {
+  color: var(--teal);
+  font: 700 11px Consolas, monospace;
+}
+
+.brush-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  overflow: hidden;
+  border: 1px solid #bdd5d7;
+  border-radius: 10px;
+  background: #e9f1f2;
+}
+
+.brush-stage canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 620px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.brush-stage > span {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: #173e6cdd;
+  color: white;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.brush-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.brush-result {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.brush-result figure {
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #dce8e9;
+  border-radius: 8px;
+  background: white;
+}
+
+.brush-result img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  background: #edf3f6;
+  border-radius: 5px;
+}
+
+.brush-result figcaption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.brush-result .secondary-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
 /* ============================================================
    RESPONSIVE DESIGN (Tablets / iPads & Mobile)
    ============================================================ */
 
 /* --- iPads & Tablets (Portrait and Landscape: <= 1024px) --- */
 @media (max-width: 1024px) {
+  .brush-controls { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+
   .intro {
     grid-template-columns: 1fr;
     gap: 28px;
@@ -1008,6 +1127,9 @@
 
 /* --- Small Mobile Phones (<= 480px) --- */
 @media (max-width: 480px) {
+  .brush-controls { grid-template-columns: 1fr; }
+  .brush-result { grid-template-columns: 1fr; }
+
   .page-wrap {
     width: calc(100% - 24px);
   }

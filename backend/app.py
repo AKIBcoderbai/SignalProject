@@ -14,6 +14,7 @@ from PIL import Image
 
 from secret_transform import analyze_attack, analyze_pair, embed, extract
 from supabase_connection import BUCKET, admin_client, current_user_id
+from fourier.brush_processing import process_image
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -102,6 +103,26 @@ def analyze_images(
         return analyze_pair(upload_bytes(original), upload_bytes(protected))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/image-edit/brush")
+def brush_edit(
+    image: UploadFile = File(...), operation: str = Form(...), mode: str = Form("spatial"),
+    brush_size: float = Form(...), strength: float = Form(...), strokes: str = Form(...),
+    channel: str = Form("rgb"), _user_id: str = Depends(current_user_id),
+):
+    """Apply a non-destructive local blur/sharpen preview using manual signal code."""
+    try:
+        edited, mask, metadata = process_image(
+            upload_bytes(image), operation, mode, brush_size, strength, strokes, channel
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "image": "data:image/png;base64," + base64.b64encode(edited).decode("ascii"),
+        "mask": "data:image/png;base64," + base64.b64encode(mask).decode("ascii"),
+        "metadata": metadata,
+    }
 
 
 @app.post("/api/secret/attack")

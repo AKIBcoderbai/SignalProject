@@ -1,0 +1,65 @@
+SIGNAL PROJECT - RUN COMMANDS (Windows PowerShell)
+====================================================
+
+প্রথমবার চালানোর নিয়ম
+----------------------
+
+1) Project folder-এ যান:
+
+cd "C:\Users\shoye\Desktop\signal\signal project final\SignalProject"
+
+2) Backend setup করুন (Backend Terminal):
+
+cd backend
+if (!(Test-Path .venv\Scripts\python.exe)) { python -m venv .venv }
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+if (Test-Path env) { Copy-Item env .env -Force }
+
+3) Frontend setup করুন (আলাদা Frontend Terminal):
+
+cd "C:\Users\shoye\Desktop\signal\signal project final\SignalProject\frontend\App"
+npm install
+if (Test-Path env) { Copy-Item env .env -Force }
+
+4) Backend চালু করুন (Backend Terminal):
+
+cd "C:\Users\shoye\Desktop\signal\signal project final\SignalProject\backend"
+.\.venv\Scripts\Activate.ps1
+uvicorn app:app --reload --port 5000
+
+5) Frontend চালু করুন (আলাদা Frontend Terminal):
+
+cd "C:\Users\shoye\Desktop\signal\signal project final\SignalProject\frontend\App"
+npm run dev
+
+তারপর browser-এ খুলুন:
+http://localhost:5173
+
+
+পরেরবার চালানোর নিয়ম
+--------------------
+
+Terminal 1 - Backend:
+
+cd "C:\Users\shoye\Desktop\signal\signal project final\SignalProject\backend"
+.\.venv\Scripts\Activate.ps1
+uvicorn app:app --reload --port 5000
+
+Terminal 2 - Frontend:
+
+cd "C:\Users\shoye\Desktop\signal\signal project final\SignalProject\frontend\App"
+npm run dev
+
+তারপর browser-এ খুলুন:
+http://localhost:5173
+
+
+নোট
+----
+- Backend বন্ধ করতে Ctrl+C চাপুন।
+- Frontend বন্ধ করতে Ctrl+C চাপুন।
+- যদি PowerShell script execution error দেয়, PowerShell-এ একবার চালান:
+  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+- Supabase credentials-এর জন্য env ফাইলের values ঠিক আছে কি না নিশ্চিত করুন।
+- env ফাইলটি .env-এ copy করা হয়; secret values এই নির্দেশিকায় লেখা হয়নি।
