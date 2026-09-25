@@ -18,7 +18,7 @@ def pad_image(image: np.ndarray, padding: tuple[int, int], mode: str = "replicat
 
 
 def convolve2d(image: np.ndarray, kernel: np.ndarray, padding: str = "replicate") -> np.ndarray:
-    """Cross-correlate with a flipped kernel, one output sample at a time."""
+    """Convolve an image with a kernel using vectorized pixel operations."""
     values = np.asarray(image, dtype=float)
     weights = np.asarray(kernel, dtype=float)
     if values.ndim not in (2, 3) or weights.ndim != 2:
@@ -30,12 +30,9 @@ def convolve2d(image: np.ndarray, kernel: np.ndarray, padding: str = "replicate"
     flipped = weights[::-1, ::-1]
     height, width = values.shape[:2]
     output = np.zeros_like(values, dtype=float)
-    for row in range(height):
-        for column in range(width):
-            window = padded[row:row + weights.shape[0], column:column + weights.shape[1]]
-            if values.ndim == 2:
-                output[row, column] = float(np.sum(window * flipped))
-            else:
-                for channel in range(values.shape[2]):
-                    output[row, column, channel] = float(np.sum(window[:, :, channel] * flipped))
+    for row in range(weights.shape[0]):
+        for column in range(weights.shape[1]):
+            weight = flipped[row, column]
+            if weight:
+                output += weight * padded[row:row + height, column:column + width]
     return output

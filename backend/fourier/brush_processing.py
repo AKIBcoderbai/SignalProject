@@ -36,23 +36,32 @@ def brush_mask(shape: tuple[int, int], strokes: list[dict], brush_size: float, f
             bottom = min(height, int(center_y + radius + 2))
             left = max(0, int(center_x - radius - 1))
             right = min(width, int(center_x + radius + 2))
-            for row in range(top, bottom):
-                for column in range(left, right):
-                    distance = float(np.hypot(row - center_y, column - center_x))
-                    if distance <= inner:
-                        value = 1.0
-                    elif distance < radius:
-                        value = (radius - distance) / max(radius - inner, 1e-9)
-                    else:
-                        value = 0.0
-                    mask[row, column] = max(mask[row, column], value)
+            rows = np.arange(top, bottom, dtype=float)[:, None]
+            columns = np.arange(left, right, dtype=float)[None, :]
+            distance = np.hypot(rows - center_y, columns - center_x)
+            value = np.clip((radius - distance) / max(radius - inner, 1e-9), 0, 1)
+            np.maximum(mask[top:bottom, left:right], value, out=mask[top:bottom, left:right])
     return mask
 
 
 def _spatial_effect(image: np.ndarray, operation: str, strength: float) -> np.ndarray:
     radius = max(1, min(15, int(round(1 + strength * 10))))
     if operation == "blur":
-        filtered = convolve2d(image, _gaussian_kernel(radius, max(0.8, radius / 2)), "replicate")
+        # A 2D Gaussian is separable: two 1D passes give the same filter
+        # with work proportional to kernel width instead of its area.
+        sigma = max(0.8, radius / 2)
+        axis = np.arange(-radius, radius + 1, dtype=float)
+        weights = np.exp(-(axis ** 2) / (2 * sigma * sigma))
+        weights /= weights.sum()
+        height, width = image.shape[:2]
+        padded_x = np.pad(image, ((0, 0), (radius, radius), (0, 0)), mode="edge")
+        horizontal = np.zeros_like(image, dtype=float)
+        for index, weight in enumerate(weights):
+            horizontal += weight * padded_x[:, index:index + width]
+        padded_y = np.pad(horizontal, ((radius, radius), (0, 0), (0, 0)), mode="edge")
+        filtered = np.zeros_like(image, dtype=float)
+        for index, weight in enumerate(weights):
+            filtered += weight * padded_y[index:index + height]
     elif operation == "sharpen":
         laplacian = np.array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]], dtype=float)
         filtered = image + strength * convolve2d(image, laplacian, "replicate")
