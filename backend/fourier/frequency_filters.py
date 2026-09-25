@@ -45,3 +45,18 @@ def frequency_filter(image: np.ndarray, kind: str, strength: float) -> np.ndarra
     filtered = centered * response
     uncentered = np.roll(np.roll(filtered, -padded_shape[0] // 2, axis=0), -padded_shape[1] // 2, axis=1)
     return ifft_2d(uncentered).real[:height, :width]
+
+
+def spectrum_preview(image: np.ndarray, size: int = 256) -> np.ndarray:
+    """Return a normalized centered magnitude spectrum for visual comparison."""
+    values = np.asarray(image, dtype=float)
+    if values.ndim != 2 or 0 in values.shape:
+        raise ValueError("spectrum input must be a non-empty 2D array")
+    height = min(values.shape[0], size)
+    width = min(values.shape[1], size)
+    block = values[:height, :width]
+    spectrum = fft_2d(block, pad=True)
+    centered = np.roll(np.roll(spectrum, spectrum.shape[0] // 2, axis=0), spectrum.shape[1] // 2, axis=1)
+    magnitude = np.log1p(np.abs(centered))
+    peak = float(magnitude.max())
+    return np.zeros_like(magnitude) if peak == 0 else magnitude / peak

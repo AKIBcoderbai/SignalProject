@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 
 from fourier.convolution import convolve2d
-from fourier.frequency_filters import frequency_filter
+from fourier.frequency_filters import frequency_filter, spectrum_preview
 
 
 def _gaussian_kernel(radius: int, sigma: float) -> np.ndarray:
@@ -103,8 +103,13 @@ def process_image(image_bytes: bytes, operation: str, mode: str, brush_size: flo
     Image.fromarray(result, "RGB").save(output, format="PNG")
     mask_output = io.BytesIO()
     Image.fromarray(np.rint(mask * 255).astype(np.uint8), "L").save(mask_output, format="PNG")
+    luminance = np.mean(image, axis=2)
+    spectrum = np.rint(spectrum_preview(luminance) * 255).astype(np.uint8)
+    spectrum_output = io.BytesIO()
+    Image.fromarray(spectrum, "L").resize((256, 256), Image.Resampling.NEAREST).save(spectrum_output, format="PNG")
     return output.getvalue(), mask_output.getvalue(), {
         "operation": operation, "mode": mode, "channel": channel_mode,
         "width": int(image.shape[1]), "height": int(image.shape[0]),
         "coveredPixels": int(np.count_nonzero(mask > 0)),
+        "spectrum": "data:image/png;base64," + __import__("base64").b64encode(spectrum_output.getvalue()).decode("ascii"),
     }

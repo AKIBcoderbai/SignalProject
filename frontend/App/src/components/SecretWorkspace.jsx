@@ -3,11 +3,10 @@ import { analyzeImages, downloadImage, hideMessage, listImages, readMessage } fr
 import ImageUploader from './ImageUploader'
 import AnalysisPanel from './AnalysisPanel'
 import AttackLab from './AttackLab'
-import BrushEditor from './BrushEditor'
 
 const utf8Size = (value) => new TextEncoder().encode(value).length
 
-function SecretWorkspace({ session }) {
+function SecretWorkspace({ session, onBack }) {
   const [mode, setMode] = useState('hide')
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState('')
@@ -155,6 +154,7 @@ function SecretWorkspace({ session }) {
   return (
     <div className="workspace-grid">
       <section className="card work-card" aria-label="Hidden message workspace">
+        {onBack && <button type="button" className="back-button workspace-back" onClick={onBack}>← All features</button>}
         <div className="work-heading"><div><span className="eyebrow">Workspace</span><h2>Work with an image</h2></div><span className="local-pill">PNG output</span></div>
         <div className="segment-control mode-tabs" role="group" aria-label="Choose an action">
           <button type="button" className={mode === 'hide' ? 'selected' : ''} onClick={() => switchMode('hide')}>Hide a message</button>
@@ -177,7 +177,6 @@ function SecretWorkspace({ session }) {
           {error && <p className="notice error" role="alert">{error}</p>}
           <button className="primary-button" type="submit" disabled={pending || !file || password.length < 8 || (mode === 'hide' && (!messageBytes || (capacity !== null && messageBytes > capacity)))}>{pending ? 'Working on image…' : mode === 'hide' ? 'Hide message and save PNG' : 'Read hidden message'}</button>
         </form>
-        {mode === 'hide' && <BrushEditor key={file?.name || 'brush-editor'} file={file} token={token} />}
         {result?.type === 'hidden' && <div className="result-panel" role="status"><span className="eyebrow">Message hidden · {result.format === 'v3' ? 'Robust' : 'Larger PNG'}</span><h3>Your protected image is ready.</h3><p>The saved PNG holds {result.messageBytes} message bytes. Download it before changing or sharing the image.</p><a className="secondary-button" href={result.protectedImage} download={`protected-${result.imageId}.png`}>Download protected PNG ↓</a><button type="button" className="text-button analysis-trigger" onClick={runAnalysis} disabled={analysisPending}>{analysisPending ? 'Measuring…' : 'Analyze image changes'}</button></div>}
         {result?.type === 'read' && <div className="result-panel" role="status"><span className="eyebrow">Message recovered</span><h3>Hidden message</h3><p className="revealed-message">{result.message}</p></div>}
         {analysisError && <p className="notice error">{analysisError}</p>}

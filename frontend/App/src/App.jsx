@@ -4,6 +4,8 @@ import AuthPanel from './components/AuthPanel'
 import PasswordPanel from './components/PasswordPanel'
 import SecretWorkspace from './components/SecretWorkspace'
 import GuestExtract from './components/GuestExtract'
+import FeatureMenu from './components/FeatureMenu'
+import BrushWorkspace from './components/BrushWorkspace'
 import { setupError, supabase } from './supabaseClient'
 import './App.css'
 
@@ -13,6 +15,7 @@ function App() {
   const [signOutError, setSignOutError] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [recoveryMode, setRecoveryMode] = useState(() => new URLSearchParams(window.location.search).has('recovery'))
+  const [activeFeature, setActiveFeature] = useState(null)
 
   useEffect(() => {
     if (!supabase) return
@@ -42,6 +45,7 @@ function App() {
       setSignOutError('')
       setSettingsOpen(false)
       setRecoveryMode(false)
+      setActiveFeature(null)
       window.history.replaceState({}, '', window.location.pathname)
     }
   }
@@ -77,7 +81,11 @@ function App() {
             ? <PasswordPanel mode="recovery" onDone={finishRecovery} />
             : settingsOpen
               ? <PasswordPanel mode="change" onDone={() => setSettingsOpen(false)} />
-              : <SecretWorkspace key={session.user.id} session={session} />
+              : <>
+                {!activeFeature && <FeatureMenu activeFeature={activeFeature} onSelect={setActiveFeature} />}
+                {activeFeature === 'encrypt' && <SecretWorkspace key={`${session.user.id}-encrypt`} session={session} onBack={() => setActiveFeature(null)} />}
+                {(activeFeature === 'blur' || activeFeature === 'sharpen') && <BrushWorkspace token={session.access_token} operation={activeFeature} onBack={() => setActiveFeature(null)} />}
+              </>
           : <><AuthPanel initialMode={recoveryMode ? 'reset' : 'signin'} /><GuestExtract /></>)}
 
         <footer className="footer-note">The image changes slightly to hold encrypted text. New short-message images may survive some JPEG compression, cropping, and resizing; recovery is not guaranteed after severe changes.</footer>

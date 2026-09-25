@@ -122,6 +122,7 @@ def brush_edit(
         "image": "data:image/png;base64," + base64.b64encode(edited).decode("ascii"),
         "mask": "data:image/png;base64," + base64.b64encode(mask).decode("ascii"),
         "metadata": metadata,
+        "spectrum": metadata.pop("spectrum"),
     }
 
 

@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { applyBrushEdit } from '../api'
 
-function BrushEditor({ file, token }) {
+function BrushEditor({ file, token, fixedOperation = null }) {
   const canvasRef = useRef(null)
   const imageRef = useRef(null)
   const drawingRef = useRef(false)
-  const [operation, setOperation] = useState('blur')
+  const [operation, setOperation] = useState(fixedOperation || 'blur')
   const [mode, setMode] = useState('spatial')
   const [channel, setChannel] = useState('rgb')
   const [brushSize, setBrushSize] = useState(0.12)
   const [strength, setStrength] = useState(0.7)
   const [strokes, setStrokes] = useState([])
   const [preview, setPreview] = useState('')
+  const [sourcePreview, setSourcePreview] = useState('')
   const [maskPreview, setMaskPreview] = useState('')
+  const [spectrumPreview, setSpectrumPreview] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
 
@@ -36,6 +38,7 @@ function BrushEditor({ file, token }) {
   useEffect(() => {
     if (!file || !canvasRef.current) return undefined
     const url = URL.createObjectURL(file)
+    setSourcePreview(url)
     const image = new Image()
     image.onload = () => {
       imageRef.current = image
@@ -46,7 +49,7 @@ function BrushEditor({ file, token }) {
       drawCanvas()
     }
     image.src = url
-    return () => { image.onload = null; URL.revokeObjectURL(url) }
+    return () => { image.onload = null; setSourcePreview(''); URL.revokeObjectURL(url) }
   }, [file])
 
   useEffect(() => { drawCanvas() }, [strokes, brushSize, operation])
@@ -82,22 +85,22 @@ function BrushEditor({ file, token }) {
     setPending(true); setError('')
     try {
       const result = await applyBrushEdit({ image: file, operation, mode, brushSize, strength, strokes, channel, token })
-      setPreview(result.image); setMaskPreview(result.mask)
+      setPreview(result.image); setMaskPreview(result.mask); setSpectrumPreview(result.spectrum)
     } catch (requestError) { setError(requestError.message) }
     finally { setPending(false) }
   }
 
-  function clearStrokes() { setStrokes([]); setPreview(''); setMaskPreview(''); setError('') }
+  function clearStrokes() { setStrokes([]); setPreview(''); setMaskPreview(''); setSpectrumPreview(''); setError('') }
 
   if (!file) return null
   return <section className="card brush-editor" aria-label="Brush based local image editing">
     <div className="panel-heading"><div><span className="eyebrow">Local signal lab</span><h3>Brush blur or sharpen</h3></div><span className="local-pill">Non-destructive</span></div>
     <p className="panel-copy">Paint only the area to process. The feathered mask keeps the untouched image unchanged and blends the filter at the edge.</p>
     <div className="brush-controls">
-      <div className="segment-control" role="group" aria-label="Choose brush operation">
+      {!fixedOperation && <div className="segment-control" role="group" aria-label="Choose brush operation">
         <button type="button" className={operation === 'blur' ? 'selected' : ''} onClick={() => setOperation('blur')}>Blur</button>
         <button type="button" className={operation === 'sharpen' ? 'selected' : ''} onClick={() => setOperation('sharpen')}>Sharpen</button>
-      </div>
+      </div>}
       <label>Processing path<select value={mode} onChange={(event) => setMode(event.target.value)}><option value="spatial">Spatial convolution</option><option value="frequency">Manual FFT frequency domain</option></select></label>
       <label>Channels<select value={channel} onChange={(event) => setChannel(event.target.value)}><option value="rgb">RGB per channel</option><option value="luminance">Luminance only</option></select></label>
       <label>Brush size <output>{Math.round(brushSize * 100)}%</output><input type="range" min="0.03" max="0.45" step="0.01" value={brushSize} onChange={(event) => setBrushSize(Number(event.target.value))} /></label>
@@ -106,7 +109,7 @@ function BrushEditor({ file, token }) {
     <div className="brush-stage"><canvas ref={canvasRef} onPointerDown={startStroke} onPointerMove={continueStroke} onPointerUp={endStroke} onPointerCancel={endStroke} aria-label="Paint a local edit mask" /><span>Paint on the image</span></div>
     <div className="brush-actions"><button type="button" className="secondary-button" onClick={clearStrokes} disabled={!strokes.length}>Clear mask</button><button type="button" className="primary-button" onClick={previewEdit} disabled={pending || !strokes.length}>{pending ? 'Processing…' : 'Preview local edit'}</button></div>
     {error && <p className="notice error" role="alert">{error}</p>}
-    {preview && <div className="brush-result"><figure><img src={preview} alt={`${operation} result preview`} /><figcaption>{operation} preview ({mode})</figcaption></figure><figure><img src={maskPreview} alt="Soft brush mask preview" /><figcaption>Feathered mask</figcaption></figure><a className="secondary-button" href={preview} download={`signal-${operation}.png`}>Download edited PNG</a></div>}
+    {preview && <div className="brush-result"><figure><img src={sourcePreview} alt="Original image" /><figcaption>Original image</figcaption></figure><figure><img src={preview} alt={`${operation} result preview`} /><figcaption>{operation} after brush mask ({mode})</figcaption></figure><figure><img src={spectrumPreview} alt="Manual FFT frequency-domain magnitude" /><figcaption>Frequency-domain magnitude</figcaption></figure><figure><img src={maskPreview} alt="Soft brush mask preview" /><figcaption>Feathered brush mask</figcaption></figure><a className="secondary-button" href={preview} download={`signal-${operation}.png`}>Download edited PNG</a></div>}
   </section>
 }
 
