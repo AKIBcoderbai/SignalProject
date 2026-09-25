@@ -6,9 +6,6 @@ function BrushWorkspace({ token, operation, onBack }) {
   const [file, setFile] = useState(null)
   const [error, setError] = useState('')
   const title = operation === 'blur' ? 'Image blur' : 'Image sharpening'
-  const description = operation === 'blur'
-    ? 'Paint a local blur and compare the source, masked result, and its frequency-domain signature.'
-    : 'Paint a local sharpening effect and compare the source, masked result, and its frequency-domain signature.'
 
   function selectFile(nextFile) {
     if (nextFile && (!['image/png', 'image/jpeg'].includes(nextFile.type) || nextFile.size > 10 * 1024 * 1024)) {
@@ -22,7 +19,7 @@ function BrushWorkspace({ token, operation, onBack }) {
 
   return <section className="feature-workspace">
     <button type="button" className="back-button" onClick={onBack}>← All features</button>
-    <div className="feature-page-heading"><div><span className="eyebrow">Local signal lab</span><h2>{title}</h2><p>{description}</p></div><span className="local-pill">Independent workspace</span></div>
+    <div className="feature-page-heading"><div><span className="eyebrow">Local signal lab</span><h2>{title}</h2></div><span className="local-pill">Independent workspace</span></div>
     <div className="card feature-upload-card"><ImageUploader file={file} onChange={selectFile} inputId={`${operation}-upload`} mode="hide" />{error && <p className="notice error" role="alert">{error}</p>}</div>
     <BrushEditor key={file?.name || operation} file={file} token={token} fixedOperation={operation} />
   </section>

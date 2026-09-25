@@ -243,6 +243,12 @@
   padding: 16px 0 45px;
 }
 
+.auth-layout.auth-only {
+  display: block;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
 .auth-context {
   padding: 12px 0;
 }

@@ -68,13 +68,7 @@ function AuthPanel({ initialMode = 'signin' }) {
   }
 
   return (
-    <section className="auth-layout" aria-label="Account access">
-      <div className="auth-context">
-        <span className="eyebrow">Your workspace</span>
-        <h2>Make the image yours.</h2>
-        <p>Sign in to store protected images in your private gallery. Your image passphrase is separate from this account password.</p>
-        <div className="process-steps"><span>01 · Choose an image</span><span>02 · Hide your text</span><span>03 · Download the PNG</span></div>
-      </div>
+    <section className="auth-layout auth-only" aria-label="Account access">
       <div className="card auth-card">
         <div className="segment-control" role="group" aria-label="Account action">
           <button type="button" className={mode === 'signin' ? 'selected' : ''} onClick={() => changeMode('signin')}>Sign in</button>

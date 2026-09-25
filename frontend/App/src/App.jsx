@@ -63,7 +63,6 @@ function App() {
           <div className="intro-copy">
             <span className="eyebrow">A Fourier image experiment</span>
             <h1 id="page-title">A message in the image.<br /><em>Only with the passphrase.</em></h1>
-            <p>Place encrypted text inside a picture you can still recognize. Keep the resulting PNG and the image passphrase to read it later.</p>
           </div>
           <div className="signal-art" aria-hidden="true">
             <div className="signal-orbit orbit-one" /><div className="signal-orbit orbit-two" />
@@ -88,7 +87,6 @@ function App() {
               </>
           : <><AuthPanel initialMode={recoveryMode ? 'reset' : 'signin'} /><GuestExtract /></>)}
 
-        <footer className="footer-note">The image changes slightly to hold encrypted text. New short-message images may survive some JPEG compression, cropping, and resizing; recovery is not guaranteed after severe changes.</footer>
       </main>
     </div>
   )

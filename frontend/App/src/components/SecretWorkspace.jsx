@@ -189,7 +189,6 @@ function SecretWorkspace({ session, onBack }) {
           {!galleryError && images.length === 0 && <p className="empty-gallery">Your protected images will appear here after you hide a message.</p>}
           <ul className="gallery-list">{images.map((image) => <li key={image.id}><div><strong>{image.width} × {image.height} image</strong><small>{new Date(image.created_at).toLocaleDateString()} · {image.message_bytes} message bytes</small></div><div className="gallery-actions"><button type="button" onClick={() => getStoredImage(image.id, true)}>Read</button><button type="button" onClick={() => getStoredImage(image.id)}>Download</button></div></li>)}</ul>
         </div>
-        <div className="method-note"><span className="eyebrow">How it works</span><p>Robust mode uses repeated Fourier tiles with error correction. Short messages may survive JPEG, cropping or resizing. Use images at least 512 × 512 for crop tests; download the original PNG for the best quality.</p></div>
       </aside>
     </div>
   )
