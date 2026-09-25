@@ -61,13 +61,13 @@ function App() {
       <main className="page-wrap">
         <section className="intro" aria-labelledby="page-title">
           <div className="intro-copy">
-            <span className="eyebrow">A Fourier image experiment</span>
-            <h1 id="page-title">A message in the image.<br /><em>Only with the passphrase.</em></h1>
+            <span className="eyebrow">Fourier Image Lab</span>
+            <h1 id="page-title">Hide secrets, blur, sharpen —<br /><em>all powered by Fourier transforms.</em></h1>
           </div>
           <div className="signal-art" aria-hidden="true">
             <div className="signal-orbit orbit-one" /><div className="signal-orbit orbit-two" />
             <div className="signal-orbit orbit-three" /><span className="signal-core">F</span>
-            <span className="signal-tag">IMAGE + SECRET</span>
+            <span className="signal-tag">FOURIER LAB</span>
           </div>
         </section>
 

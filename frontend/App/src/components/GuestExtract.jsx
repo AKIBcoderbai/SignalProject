@@ -19,19 +19,19 @@ function GuestExtract() {
   }
 
   return <section className="card guest-panel">
-    <span className="eyebrow">Guest extraction</span>
-    <h2>Read a protected image</h2>
+    <span className="eyebrow">Quick extract</span>
+    <h2>Read a hidden message</h2>
     <form className="form-stack" onSubmit={submit}>
       <ImageUploader file={file} onChange={(next) => { setFile(null); setResult(null); setError(''); if (next && (!['image/png', 'image/jpeg'].includes(next.type) || next.size > 10 * 1024 * 1024)) setError('Choose a PNG or JPEG under 10 MB.'); else setFile(next) }} inputId="guest-upload" mode="guest" />
-      <div className="segment-control" role="group" aria-label="Choose image reading mode">
+      <div className="segment-control" role="group" aria-label="Decoding method">
         <button type="button" className={readMode === 'robust' ? 'selected' : ''} onClick={() => { setReadMode('robust'); setResult(null); setError('') }}>Robust</button>
         <button type="button" className={readMode === 'normal' ? 'selected' : ''} onClick={() => { setReadMode('normal'); setResult(null); setError('') }}>Normal</button>
       </div>
-      <label>Image passphrase<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required placeholder="At least 8 characters" /></label>
+      <label>Passphrase<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required placeholder="The passphrase used to hide the message" /></label>
       {error && <p className="notice error" role="alert">{error}</p>}
-      <button className="primary-button" disabled={pending || !file || password.length < 8}>{pending ? 'Reading…' : 'Read hidden message'}</button>
+      <button className="primary-button" disabled={pending || !file || password.length < 8}>{pending ? 'Reading…' : 'Extract message'}</button>
     </form>
-    {result !== null && <div className="result-panel" role="status"><span className="eyebrow">Message recovered</span><p className="revealed-message">{result}</p></div>}
+    {result !== null && <div className="result-panel" role="status"><span className="eyebrow">Found it</span><p className="revealed-message">{result}</p></div>}
   </section>
 }
 

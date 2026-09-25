@@ -91,20 +91,20 @@ function BrushEditor({ file, token, fixedOperation = null }) {
   function clearStrokes() { setStrokes([]); setPreview(''); setMaskPreview(''); setSpectrumPreview(''); setError('') }
 
   if (!file) return null
-  return <section className="card brush-editor" aria-label="Brush based local image editing">
-    <div className="panel-heading"><div><span className="eyebrow">Local signal lab</span><h3>Brush blur or sharpen</h3></div><span className="local-pill">Non-destructive</span></div>
+  return <section className="card brush-editor" aria-label="Paint-to-edit canvas">
+    <div className="panel-heading"><div><span className="eyebrow">Frequency-domain editing</span><h3>Paint where you want to {operation}</h3></div><span className="local-pill">Non-destructive</span></div>
     <div className="brush-controls">
-      {!fixedOperation && <div className="segment-control" role="group" aria-label="Choose brush operation">
+      {!fixedOperation && <div className="segment-control" role="group" aria-label="Choose operation">
         <button type="button" className={operation === 'blur' ? 'selected' : ''} onClick={() => setOperation('blur')}>Blur</button>
         <button type="button" className={operation === 'sharpen' ? 'selected' : ''} onClick={() => setOperation('sharpen')}>Sharpen</button>
       </div>}
       <label>Brush size <output>{Math.round(brushSize * 100)}%</output><input type="range" min="0.03" max="0.45" step="0.01" value={brushSize} onChange={(event) => setBrushSize(Number(event.target.value))} /></label>
       <label>Strength <output>{Math.round(strength * 100)}%</output><input type="range" min="0.1" max="1" step="0.05" value={strength} onChange={(event) => setStrength(Number(event.target.value))} /></label>
     </div>
-    <div className="brush-stage"><canvas ref={canvasRef} onPointerDown={startStroke} onPointerMove={continueStroke} onPointerUp={endStroke} onPointerCancel={endStroke} aria-label="Brush editing canvas" /></div>
-    <div className="brush-actions"><button type="button" className="secondary-button" onClick={clearStrokes} disabled={!strokes.length}>Clear mask</button><button type="button" className="primary-button" onClick={previewEdit} disabled={pending || !strokes.length}>{pending ? 'Processing…' : 'Preview local edit'}</button></div>
+    <div className="brush-stage"><canvas ref={canvasRef} onPointerDown={startStroke} onPointerMove={continueStroke} onPointerUp={endStroke} onPointerCancel={endStroke} aria-label="Drawing canvas" /></div>
+    <div className="brush-actions"><button type="button" className="secondary-button" onClick={clearStrokes} disabled={!strokes.length}>Clear</button><button type="button" className="primary-button" onClick={previewEdit} disabled={pending || !strokes.length}>{pending ? 'Applying…' : 'Apply & preview'}</button></div>
     {error && <p className="notice error" role="alert">{error}</p>}
-    {preview && <div className="brush-result"><figure><img src={sourcePreview} alt="Original image" /><figcaption>Original image</figcaption></figure><figure><img src={preview} alt={`${operation} result preview`} /><figcaption>{operation} after brush mask</figcaption></figure><figure><img src={spectrumPreview} alt="Frequency-domain magnitude" /><figcaption>Frequency-domain magnitude</figcaption></figure><figure><img src={maskPreview} alt="Brush mask" /><figcaption>Brush mask</figcaption></figure><a className="secondary-button" href={preview} download={`signal-${operation}.png`}>Download edited PNG</a></div>}
+    {preview && <div className="brush-result"><figure><img src={sourcePreview} alt="Original" /><figcaption>Original</figcaption></figure><figure><img src={preview} alt={`After ${operation}`} /><figcaption>After {operation}</figcaption></figure><figure><img src={spectrumPreview} alt="Frequency spectrum" /><figcaption>Frequency spectrum</figcaption></figure><figure><img src={maskPreview} alt="Mask used" /><figcaption>Your painted mask</figcaption></figure><a className="secondary-button" href={preview} download={`edited-${operation}.png`}>Download result</a></div>}
   </section>
 }
 
